@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.paint.LinearGradient?>
+<?import javafx.scene.paint.Stop?>
+<?import javafx.scene.text.Font?>
+
+<StackPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.RegisterController">
+   <children>
+      <AnchorPane maxWidth="500.0" prefWidth="500.0">
+         <children>
+            <VBox layoutX="1.0" layoutY="-5.0" maxWidth="500.0" prefWidth="500.0" spacing="8.0" style="-fx-background-color: #0b0f0e;" stylesheets="@../css/auctionhub.css">
+               <padding>
+                  <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+               </padding>
+               <children>
+                  <VBox prefHeight="109.0" prefWidth="690.0" spacing="8.0" style="-fx-background-color: #111815; -fx-background-radius: 15;">
+                     <padding>
+                        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+                     </padding>
+                     <effect>
+                        <DropShadow />
+                     </effect>
+                     <children>
+                        <Label alignment="TOP_CENTER" prefHeight="40.0" prefWidth="720.0" style="-fx-text-fill: #0f6e56; -fx-font-size: 28; -fx-font-weight: bold;" text="AuctionHub" />
+                        <Label alignment="TOP_CENTER" prefHeight="26.0" prefWidth="734.0" style="-fx-text-fill: #e8ede9; -fx-font-size: 16; -fx-font-weight: bold;" text="TẠO TÀI KHOẢN MỚI">
+                           <font>
+                              <Font size="20.0" />
+                           </font>
+                           <textFill>
+                              <LinearGradient endX="1.0" endY="1.0">
+                                 <stops>
+                                    <Stop>
+                                       <color>
+                                          <Color />
+                                       </color>
+                                    </Stop>
+                                    <Stop offset="1.0">
+                                       <color>
+                                          <Color red="0.20160000026226044" green="0.5600000023841858" blue="0.36112135648727417" />
+                                       </color>
+                                    </Stop>
+                                 </stops>
+                              </LinearGradient>
+                           </textFill>
+                        </Label>
+                     </children>
+                  </VBox>
+                  <Label alignment="CENTER" prefHeight="22.0" prefWidth="58.0" style="-fx-text-fill: #0f6e56; -fx-font-size: 13; -fx-font-weight: bold;" text="VAI TRÒ" textFill="#c1bab9" VBox.vgrow="ALWAYS">
+                     <font>
+                        <Font size="15.0" />
+                     </font>
+                  </Label>
+                  <HBox alignment="CENTER" spacing="8.0">
+                     <children>
+                        <ToggleButton mnemonicParsing="false" prefHeight="46.0" prefWidth="282.0" styleClass="toggle-button-hub" text="Người mua">
+                           <toggleGroup>
+                              <ToggleGroup fx:id="groupRole" />
+                           </toggleGroup>
+                           <font>
+                              <Font size="20.0" />
+                           </font>
+                        </ToggleButton>
+                        <ToggleButton mnemonicParsing="false" prefHeight="46.0" prefWidth="264.0" styleClass="toggle-button-hub" text="Người bán" toggleGroup="$groupRole">
+                           <font>
+                              <Font size="20.0" />
+                           </font>
+                        </ToggleButton>
+                     </children>
+                  </HBox>
+                  <Label style="-fx-text-fill: #0f6e56; -fx-font-size: 13; -fx-font-weight: BOLD;" text="HỌ VÀ TÊN" textFill="#cc3535" />
+                  <HBox spacing="8.0" style="-fx-border-color: #2a3b34; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 5 10; -fx-alignment: CENTER_LEFT; -fx-background-color: transparent;">
+                     <children>
+                        <Label text="👤" textFill="#6e3737">
+                           <font>
+                              <Font size="20.0" />
+                           </font>
+                        </Label>
+                        <TextField fx:id="txtFullName" alignment="TOP_LEFT" prefHeight="26.0" prefWidth="254.0" style="-fx-background-color: transparent; fx-text-fill: #e8ede9; -fx-prompt-text-fill: #666;" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <Label style="-fx-font-weight: Bold; -fx-text-fill: #0f6e56; -fx-font-size: 13;" text="TÊN ĐĂNG NHẬP" />
+                  <HBox spacing="8.0" style="-fx-border-color: #2a3b34; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 5 10; -fx-alignment: CENTER_LEFT; -fx-background-color: transparent;">
+                     <children>
+                        <Label prefHeight="52.0" prefWidth="42.0" text="\@" textFill="#a95f5f">
+                           <font>
+                              <Font size="20.0" />
+                           </font>
+                        </Label>
+                        <TextField fx:id="txtUserName" style="-fx-background-color: transparent; -fx-text-fill: #e8ede9; -fx-prompt-text-fill: #666;" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <Label style="-fx-text-fill: #0f6e56; -fx-font-size: 13; -fx-font-weight: bold;" text="EMAIL" />
+                  <HBox spacing="8.0" style="-fx-border-color: #2a3b34; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 5 10; -fx-alignment: CENTER_LEFT; -fx-background-color: transparent;">
+                     <children>
+                        <Label prefHeight="38.0" prefWidth="47.0" text="✉" textFill="#9c5959">
+                           <font>
+                              <Font size="35.0" />
+                           </font>
+                        </Label>
+                        <TextField fx:id="txtEmail" style="-fx-background-color: transparent; -fx-text-fill: #e8ede9; -fx-prompt-text-fill: #666;" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <Label style="-fx-text-fill: #0f6e56; -fx-font-size: 13; -fx-font-weight: Bold;" text="MẬT KHẨU" />
+                  <HBox spacing="8.0" style="-fx-border-color: #2a3b34; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 5 10; -fx-alignment: CENTER_LEFT; -fx-background-color: transparent;">
+                     <children>
+                        <Label prefHeight="30.0" prefWidth="37.0" text="🔒" textFill="#a95a5a">
+                           <font>
+                              <Font size="20.0" />
+                           </font>
+                        </Label>
+                        <PasswordField fx:id="pwPassword" prefHeight="26.0" prefWidth="747.0" style="-fx-background-color: transparent; -fx-text-fill: #e8ede9; -fx-prompt-text-fill: #666;" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+                  <Button alignment="CENTER" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleRegister" styleClass="button-primary-hub" text="TẠO TÀI KHOẢN →" />
+                  <HBox alignment="CENTER" spacing="5.0">
+                     <children>
+                        <Label style="-fx-text-fill: #666;" text="Đã có tài khoản?" />
+                        <Label fx:id="lblLogin" onMouseClicked="#handleLoginNavigation" styleClass="label-hyperlink-hub" text="Đăng nhập" />
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+         </children>
+         <padding>
+            <Insets top="30.0" />
+         </padding>
+      </AnchorPane>
+   </children>
+</StackPane>

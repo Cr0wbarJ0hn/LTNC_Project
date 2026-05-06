@@ -1,4 +1,4 @@
-package model;
+package auction.model;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;

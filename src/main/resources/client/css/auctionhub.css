@@ -1,0 +1,211 @@
+/* Màu chữ mặc định cho toàn form */
+.root {
+    -fx-font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+/* Nút chọn Vai Trò */
+.toggle-button-hub {
+    -fx-background-color: transparent;
+    -fx-border-color: #2a3b34;
+    -fx-border-radius: 8;
+    -fx-text-fill: #e8ede9;
+    -fx-cursor: hand;
+}
+
+.toggle-button-hub:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: #0f6e56; /* Viền xanh khi được chọn */
+    -fx-text-fill: #0f6e56; /* Chữ xanh khi được chọn */
+    -fx-border-width: 2;
+}
+
+/* Nút chính "Tạo tài khoản" */
+.button-primary-hub {
+    -fx-background-color: #0f6e56;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+
+.button-primary-hub:hover {
+    -fx-background-color: #128c6e; /* Màu xanh sáng hơn khi di chuột */
+}
+
+/* Chữ Đăng nhập (giả hyperlink) */
+.label-hyperlink-hub {
+    -fx-text-fill: #0f6e56;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.label-hyperlink-hub:hover {
+    -fx-underline: true;
+}
+
+/* Khi ô nhập liệu được active (HBox bao quanh) */
+.hbox-input-hub:focused-within {
+    -fx-border-color: #0f6e56;
+    -fx-border-width: 1.5;
+}
+/* Style cho Label đăng nhập */
+#lblLogin:hover {
+    -fx-underline: true;
+    -fx-text-fill: #128c6e; /* Sáng hơn một chút khi hover */
+}
+
+
+
+
+
+
+/* ── Root màn hình AuctionList ────────────────────────────── */
+.root-al { -fx-background-color: #0b0f0e; }
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.sidebar-al {
+    -fx-background-color: #111815;
+    -fx-border-color: rgba(255,255,255,0.07);
+    -fx-border-width: 0 1 0 0;
+    -fx-spacing: 2;
+}
+.sidebar-logo-al {
+    -fx-padding: 22 22 18 22;
+    -fx-border-color: rgba(255,255,255,0.07);
+    -fx-border-width: 0 0 1 0;
+    -fx-spacing: 4;
+}
+.logo-name-al {
+    -fx-font-size: 19px; -fx-font-weight: bold;
+    -fx-text-fill: #2dcc8f; -fx-font-family: "Segoe UI", sans-serif;
+}
+.logo-sub-al { -fx-font-size: 9px; -fx-text-fill: rgba(45,204,143,0.45); -fx-letter-spacing: 1.5; }
+.menu-sec-al { -fx-font-size: 9px; -fx-text-fill: #3d5248; -fx-padding: 12 0 4 22; -fx-letter-spacing: 1.5; -fx-font-weight: bold; }
+.menu-btn-al {
+    -fx-background-color: transparent; -fx-text-fill: #7a9188;
+    -fx-font-size: 12.5px; -fx-padding: 8 14 8 20;
+    -fx-alignment: CENTER_LEFT; -fx-background-radius: 8;
+    -fx-border-color: transparent; -fx-cursor: hand;
+}
+.menu-btn-al:hover { -fx-background-color: rgba(45,204,143,0.07); -fx-text-fill: #e8ede9; }
+.menu-active-al { -fx-background-color: rgba(45,204,143,0.11); -fx-text-fill: #2dcc8f; -fx-font-weight: bold; }
+
+/* User chip */
+.user-chip-al { -fx-padding: 14 18 18 18; -fx-border-color: rgba(255,255,255,0.07); -fx-border-width: 1 0 0 0; }
+.user-avatar-al {
+    -fx-background-color: rgba(45,204,143,0.14); -fx-border-color: rgba(45,204,143,0.28);
+    -fx-border-width: 1; -fx-border-radius: 50; -fx-background-radius: 50;
+    -fx-min-width: 32; -fx-min-height: 32; -fx-max-width: 32; -fx-max-height: 32;
+    -fx-alignment: CENTER; -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #2dcc8f;
+}
+.user-name-al { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #e8ede9; }
+.user-role-al { -fx-font-size: 10px; -fx-text-fill: #7a9188; }
+
+/* ── Topbar ────────────────────────────────────────────────── */
+.topbar-al {
+    -fx-background-color: #111815; -fx-border-color: rgba(255,255,255,0.07);
+    -fx-border-width: 0 0 1 0; -fx-padding: 12 24 12 24;
+}
+.topbar-title-al { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #e8ede9; -fx-font-family: "Segoe UI", serif; }
+.search-wrap-al {
+    -fx-background-color: #161d1a; -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 0 10 0 10;
+}
+.search-icon-al { -fx-text-fill: #3d5248; -fx-font-size: 12px; }
+.search-input-al {
+    -fx-background-color: transparent; -fx-border-color: transparent;
+    -fx-text-fill: #e8ede9; -fx-prompt-text-fill: #3d5248; -fx-font-size: 12px; -fx-pref-height: 36;
+}
+.sort-combo-al {
+    -fx-background-color: #161d1a; -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #e8ede9; -fx-font-size: 12px; -fx-pref-height: 36;
+}
+.sort-combo-al .list-cell { -fx-text-fill: #e8ede9; -fx-background-color: #161d1a; }
+.sort-combo-al .list-view  { -fx-background-color: #161d1a; }
+
+/* ── Stats ─────────────────────────────────────────────────── */
+.stats-banner-al { -fx-background-color: #111815; -fx-border-color: rgba(255,255,255,0.07); -fx-border-width: 0 0 1 0; }
+.stat-cell-al { -fx-padding: 14 0 14 0; }
+.stat-sep-al  { -fx-fill: rgba(255,255,255,0.07); }
+.stat-val-al  { -fx-font-size: 22px; -fx-font-weight: bold; }
+.stat-green-al { -fx-text-fill: #2dcc8f; }
+.stat-amber-al { -fx-text-fill: #f5a623; }
+.stat-red-al   { -fx-text-fill: #ff4d4d; }
+.stat-dim-al   { -fx-text-fill: #7a9188; }
+.stat-lbl-al   { -fx-font-size: 10px; -fx-text-fill: #7a9188; }
+
+/* ── ScrollPane ─────────────────────────────────────────────── */
+.scroll-al { -fx-background-color: #0b0f0e; -fx-background: #0b0f0e; -fx-border-color: transparent; }
+.scroll-al > .viewport { -fx-background-color: #0b0f0e; }
+.scroll-al .scroll-bar { -fx-background-color: #111815; }
+.scroll-al .scroll-bar .thumb { -fx-background-color: #3d5248; -fx-background-radius: 4; }
+
+/* ── Ticker ──────────────────────────────────────────────────── */
+.ticker-al { -fx-background-color: rgba(255,77,77,0.07); -fx-border-color: rgba(255,77,77,0.18); -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 9 14 9 14; }
+.ticker-dot-al { -fx-text-fill: #ff4d4d; -fx-font-size: 9px; }
+.ticker-txt-al { -fx-font-size: 11px; -fx-text-fill: #7a9188; }
+
+/* ── Chips ───────────────────────────────────────────────────── */
+.filter-lbl-al { -fx-font-size: 11px; -fx-text-fill: #7a9188; }
+.chip-al {
+    -fx-background-color: transparent; -fx-border-color: rgba(255,255,255,0.07);
+    -fx-border-radius: 20; -fx-background-radius: 20;
+    -fx-text-fill: #7a9188; -fx-font-size: 11px; -fx-font-weight: bold;
+    -fx-padding: 4 12 4 12; -fx-cursor: hand;
+}
+.chip-al:hover { -fx-border-color: rgba(255,255,255,0.14); -fx-text-fill: #e8ede9; }
+.chip-on-al { -fx-border-color: #2dcc8f; -fx-background-color: rgba(45,204,143,0.1); -fx-text-fill: #2dcc8f; }
+
+/* ── Section ─────────────────────────────────────────────────── */
+.sec-title-al { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #e8ede9; }
+.sec-count-al { -fx-font-size: 11px; -fx-text-fill: #7a9188; }
+.tile-al { -fx-background-color: transparent; }
+
+/* ── Card ────────────────────────────────────────────────────── */
+.card-al {
+    -fx-background-color: #161d1a; -fx-border-color: rgba(255,255,255,0.07);
+    -fx-border-radius: 12; -fx-background-radius: 12; -fx-border-width: 1;
+}
+.card-al:hover { -fx-border-color: rgba(45,204,143,0.28); }
+.card-cat-al  { -fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: #2dcc8f; }
+.card-name-al { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #e8ede9; -fx-wrap-text: true; }
+.card-plbl-al { -fx-font-size: 9px; -fx-text-fill: #7a9188; }
+.card-price-al { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2dcc8f; }
+.card-price-ended-al { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #7a9188; }
+.card-start-al { -fx-font-size: 9px; -fx-text-fill: #3d5248; }
+.card-bar-al { -fx-accent: #2dcc8f; -fx-background-color: rgba(255,255,255,0.06); -fx-background-radius: 2; }
+.card-bar-al.ended-al { -fx-accent: #3d5248; }
+
+/* Nút đặt giá */
+.bid-btn-al {
+    -fx-background-color: rgba(45,204,143,0.12); -fx-border-color: rgba(45,204,143,0.25);
+    -fx-border-radius: 6; -fx-background-radius: 6;
+    -fx-text-fill: #2dcc8f; -fx-font-size: 11px; -fx-font-weight: bold;
+    -fx-padding: 5 10 5 10; -fx-cursor: hand;
+}
+.bid-btn-al:hover { -fx-background-color: rgba(45,204,143,0.22); }
+.bid-btn-off-al {
+    -fx-background-color: transparent; -fx-border-color: rgba(255,255,255,0.07);
+    -fx-border-radius: 6; -fx-background-radius: 6;
+    -fx-text-fill: #3d5248; -fx-font-size: 11px; -fx-padding: 5 10 5 10;
+}
+
+/* ── Upcoming row ────────────────────────────────────────────── */
+.upcoming-row-al {
+    -fx-background-color: #161d1a; -fx-border-color: rgba(255,255,255,0.07);
+    -fx-border-radius: 9; -fx-background-radius: 9; -fx-cursor: hand;
+}
+.upcoming-row-al:hover { -fx-border-color: rgba(245,166,35,0.3); }
+.upcoming-icon-al { -fx-background-color: rgba(245,166,35,0.1); -fx-background-radius: 9; -fx-min-width: 40; -fx-min-height: 40; -fx-max-width: 40; -fx-max-height: 40; -fx-alignment: CENTER; -fx-font-size: 20px; }
+.upcoming-name-al { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #e8ede9; }
+.upcoming-meta-al { -fx-font-size: 10px; -fx-text-fill: #7a9188; }
+.opens-lbl-al  { -fx-font-size: 9px; -fx-text-fill: #7a9188; }
+.opens-time-al { -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #f5a623; }
+.notify-btn-al {
+    -fx-background-color: rgba(245,166,35,0.1); -fx-border-color: rgba(245,166,35,0.25);
+    -fx-border-radius: 7; -fx-background-radius: 7;
+    -fx-text-fill: #f5a623; -fx-font-size: 11px; -fx-font-weight: bold;
+    -fx-padding: 6 12 6 12; -fx-cursor: hand;
+}
+.notify-btn-al:hover { -fx-background-color: rgba(245,166,35,0.2); }

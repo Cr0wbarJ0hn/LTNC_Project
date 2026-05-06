@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox onMouseClicked="#onCardClicked" onMouseEntered="#onMouseEntered" onMouseExited="#onMouseExited" onMousePressed="#onMousePressed" onMouseReleased="#onMouseReleased" prefHeight="551.0" prefWidth="402.0" styleClass="au" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.AuctionCardController">
+   <children>
+      <Pane fx:id="cardContainer" prefHeight="556.0" prefWidth="441.0" style="-fx-background-color: #20202E;" styleClass="auction-card" stylesheets="@../../../style.css">
+         <children>
+            <ImageView fx:id="itemImageView" fitHeight="357.0" fitWidth="402.0" pickOnBounds="true" />
+
+            <Label fx:id="nameLabel" alignment="TOP_LEFT" layoutX="19.0" layoutY="373.0" prefHeight="55.0" prefWidth="237.0" text="Vintage Hasselblad 500C/M Camera" textFill="WHITE" wrapText="true">
+               <font>
+                  <Font name="Segoe UI Bold" size="18.0" />
+               </font>
+            </Label>
+
+            <Label fx:id="conditionLabel" alignment="CENTER" layoutX="289.0" layoutY="373.0" prefHeight="25.0" prefWidth="90.0" text="LIKE NEW">
+               <style>
+                  -fx-background-color: #e6f0ff;
+                  -fx-text-fill: #1a73e8;
+                  -fx-padding: 2 8;
+                  -fx-background-radius: 10;
+                  -fx-font-weight: bold;
+                  -fx-font-size: 11px;
+               </style>
+            </Label>
+
+            <Label fx:id="Seller" layoutX="19.0" layoutY="426.0" text="Seller: Username" textFill="#888888">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Label>
+
+            <Separator layoutX="21.0" layoutY="453.0" prefHeight="1.0" prefWidth="349.0" style="-fx-background-color: #888888;" />
+
+            <Label layoutX="19.0" layoutY="472.0" text="Current price" textFill="#888888">
+               <font>
+                  <Font size="12.0" />
+               </font>
+            </Label>
+
+            <Label fx:id="priceLabel" layoutX="19.0" layoutY="488.0" text="\$1.200" textFill="#a78bfa">
+               <font>
+                  <Font name="System Bold" size="22.0" />
+               </font>
+            </Label>
+
+            <Button layoutX="239.0" layoutY="484.0" mnemonicParsing="false" onMouseClicked="#onCardClicked" prefHeight="40.0" prefWidth="140.0" style="-fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5); -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;" text="See item preview">
+               <font>
+                  <Font name="System Bold" size="13.0" />
+               </font>
+            </Button>
+         </children>
+         <cursor>
+            <Cursor fx:constant="HAND" />
+         </cursor>
+      </Pane>
+   </children>
+</VBox>

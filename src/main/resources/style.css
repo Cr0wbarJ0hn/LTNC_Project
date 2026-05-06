@@ -1,0 +1,976 @@
+
+.root {
+    /* Point this to where your image is saved in your project */
+    -fx-background-image: url('/images/unnamed.jpg');
+
+    /* This is the magic line that makes it cover the whole screen! */
+    -fx-background-size: cover;
+
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center center;
+}
+.left-pane {
+    /* Notice: no slash before the word 'images' */
+    -fx-background-image: url('images/unnamed.jpg');
+    -fx-background-size: cover;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
+}
+.modern-input {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d1d5db; /* A clean, light gray border */
+    -fx-border-radius: 6px; /* Smooth rounded corners */
+    -fx-background-radius: 6px; /* Matches the border radius */
+    -fx-padding: 10px 14px; /* Gives the text room to breathe */
+    -fx-text-fill: #1f2937; /* Dark slate gray text instead of harsh black */
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #9ca3af; /* Lighter gray for the "Username" placeholder */
+}
+
+/* How the text box looks when the user clicks inside it (Focused) */
+.modern-input:focused {
+    -fx-border-color: #2563eb; /* A beautiful modern blue border */
+    -fx-border-width: 2px; /* Makes the border slightly thicker */
+    /* This next line removes JavaFX's ugly default focus ring */
+    -fx-background-insets: 0, 0, 0, 0;
+}
+
+
+/* For your smaller text, like the "Sign up" label */
+.modern-label {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 14px;
+    -fx-text-fill: #4b5563; /* A softer, medium gray so it doesn't fight the title for attention */
+}
+.modern-card {
+
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);
+}
+
+/* This is for your main action buttons (like the blue 'Upload' button) */
+.modern-button {
+    -fx-background-color: #1A2CA3; /* The purple-blue from your picture */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    -fx-padding: 10 20 10 20;
+}
+
+/* Make the button slightly darker when the mouse hovers over it! */
+.modern-button:hover {
+    -fx-background-color: #2845D6;
+}
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-text-fill: rgba(255, 255, 255, 0.4); /* text-white/40 */
+    -fx-font-size: 18px;
+    -fx-padding: 10px 12px; /* py-2.5 px-3 */
+    -fx-background-radius: 12px; /* rounded-xl */
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 12px; /* gap-3 */
+}
+
+/* --- HOVER STATE --- */
+.nav-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.05); /* hover:bg-white/5 */
+    -fx-text-fill: FFFCFB /* hover:text-white/70 */
+}
+
+
+.nav-button:selected {
+    -fx-background-color: rgba(137, 34, 254, 0.2); /* bg-violet-600/20 */
+    -fx-text-fill: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5); /* text-violet-400 */
+
+    /* Mimicking the absolute left vertical indicator bar using a left border */
+    -fx-border-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5); /* bg-violet-500 */
+    -fx-border-width: 0 0 0 3px; /* 3px wide bar on the left */
+    -fx-border-radius: 12px;
+    -fx-background-insets: 0 0 0 3px; /* Pushes background so it doesn't overlap border */
+}
+
+.icon-box {
+    -fx-scale-shape: true;
+    -fx-position-shape: true;
+    -fx-background-color:  linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
+    -fx-shape: "M180-674v494h600v-494H640v293q0 17.5-14 26.25t-29 .75l-117-58-117 58q-15 8-29-.75T320-381v-293H180Zm0 554q-24.75 0-42.37-17.63Q120-155.25 120-180v-529q0-9.88 3-19.06 3-9.18 9-16.94l52-71q8-11 20.94-17.5Q217.88-840 232-840h495q14.12 0 27.06 6.5T775-816l53 71q6 7.76 9 16.94 3 9.18 3 19.06v529q0 24.75-17.62 42.37Q804.75-120 780-120H180Zm17-614h565l-36.41-46H233l-36 46Zm183 60v245l100-50 100 50v-245H380Zm-200 0h600-600Z" ;
+
+    /* STRICTLY LOCK THE SIZE TO 24x24 */
+    -fx-min-width: 300px;
+    -fx-min-height: 300px;
+    -fx-max-width: 300px;
+    -fx-max-height: 300px;
+
+    -fx-scale-x: 1.2; /* Shrinks the width to 80% */
+    -fx-scale-y: 1.2;
+}
+
+.screen-icon {
+    -fx-scale-shape: true;
+    -fx-position-shape: true;
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
+
+    /* STRICTLY LOCK THE SIZE TO 24x24 */
+    -fx-min-width: 150px;
+    -fx-min-height: 150px;
+    -fx-max-width: 150px;
+    -fx-max-height: 150px;
+
+    -fx-scale-x: 1; /* Shrinks the width to 80% */
+    -fx-scale-y: 1;
+}
+.icon-sell {
+    -fx-shape: "M863-404 557-97q-9 8.5-20.25 12.75T514.25-80Q503-80 492-84.5T472-97L98-472q-8-8-13-18.96-5-10.95-5-23.04v-306q0-24.75 17.63-42.38Q115.25-880 140-880h307q12.07 0 23.39 4.87Q481.7-870.25 490-862l373 373q9.39 9 13.7 20.25 4.3 11.25 4.3 22.5t-4.5 22.75Q872-412 863-404ZM516-138l306-307-375-375H140v304l376 378ZM245-664q21 0 36.5-15.5T297-716q0-21-15.5-36.5T245-768q-21 0-36.5 15.5T193-716q0 21 15.5 36.5T245-664Zm236 185Z" ;
+}
+
+.icon-gavels {
+    -fx-shape: "M190-180h420q13 0 21.5 8.5T640-150q0 13-8.5 21.5T610-120H190q-13 0-21.5-8.5T160-150q0-13 8.5-21.5T190-180Zm150-194L202-512q-17-17-17.5-41.5T201-596l29-30 224 222-30 30q-17 17-42 17t-42-17Zm296-212L414-810l30-29q18-17 42.5-16.5T528-838l138 138q17 17 17 42t-17 42l-30 30Zm181 405L302-696l42-42 515 515q9 9 9 21t-9 21q-9 9-21 9t-21-9Z";
+}
+
+.icon-notif {
+
+    -fx-shape: "M190-200q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h50v-304q0-84 49.5-150.5T420-798v-22q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v22q81 17 130.5 83.5T720-564v304h50q12.75 0 21.38 8.68 8.62 8.67 8.62 21.5 0 12.82-8.62 21.32-8.63 8.5-21.38 8.5H190Zm290-302Zm0 422q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM300-260h360v-304q0-75-52.5-127.5T480-744q-75 0-127.5 52.5T300-564v304Zm201.5-174.63q8.5-8.62 8.5-21.37v-154q0-12.75-8.68-21.38-8.67-8.62-21.5-8.62-12.82 0-21.32 8.62-8.5 8.63-8.5 21.38v154q0 12.75 8.68 21.37 8.67 8.63 21.5 8.63 12.82 0 21.32-8.63ZM479.98-320q14.02 0 23.52-9.48t9.5-23.5q0-14.02-9.48-23.52t-23.5-9.5q-14.02 0-23.52 9.48t-9.5 23.5q0 14.02 9.48 23.52t23.5 9.5Z";
+}
+.icon-1 {
+    -fx-shape: "M511-258.03q11-11.03 11-27T510.97-312q-11.03-11-27-11T457-311.97q-11 11.03-11 27T457.03-258q11.03 11 27 11T511-258.03ZM480.27-80q-82.74 0-155.5-31.5Q252-143 197.5-197.5t-86-127.34Q80-397.68 80-480.5t31.5-155.66Q143-709 197.5-763t127.34-85.5Q397.68-880 480.5-880t155.66 31.5Q709-817 763-763t85.5 127Q880-563 880-480.27q0 82.74-31.5 155.5Q817-252 763-197.68q-54 54.31-127 86Q563-80 480.27-80Zm.23-60Q622-140 721-239.5t99-241Q820-622 721.19-721T480-820q-141 0-240.5 98.81T140-480q0 141 99.5 240.5t241 99.5Zm-.5-340Zm2.77-180Q513-660 536-641.5q23 18.5 23 47.2 0 26.3-15.65 45.73Q527.7-529.14 508-512q-23 19-40 42.38-17 23.39-17 52.62 0 11 8.4 17.5T479-393q12 0 19.88-8 7.87-8 10.12-20 3-21 16-38t30.23-30.78Q580-510 596-537q16-27 16-58.61 0-50.39-37.5-83.89T485.55-713Q450-713 417-698t-54 44q-7 10-6.5 21.5t9.47 18.5q11.41 8 23.65 5 12.23-3 20.38-14 12.75-17.9 31.88-27.45Q461-660 482.77-660Z";
+}
+.icon-2 {
+    -fx-scale-shape: true;
+    -fx-position-shape: true;
+    -fx-background-color:  linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
+    -fx-shape: "M479.5-267q72.5 0 121.5-49t49-121.5q0-72.5-49-121T479.5-607q-72.5 0-121 48.5t-48.5 121q0 72.5 48.5 121.5t121 49Zm0-60q-47.5 0-78.5-31.5t-31-79q0-47.5 31-78.5t78.5-31q47.5 0 79 31t31.5 78.5q0 47.5-31.5 79t-79 31.5ZM140-120q-24 0-42-18t-18-42v-513q0-23 18-41.5t42-18.5h147l55-66q8-11 20-16t26-5h184q14 0 26 5t20 16l55 66h147q23 0 41.5 18.5T880-693v513q0 24-18.5 42T820-120H140Zm0-60h680v-513H645l-73-87H388l-73 87H140v513Zm340-257Z"  ;
+
+    /* STRICTLY LOCK THE SIZE TO 24x24 */
+    -fx-min-width: 350px;
+    -fx-min-height: 350px;
+    -fx-max-width: 350px;
+    -fx-max-height: 350px;
+
+    -fx-scale-x: 1; /* Shrinks the width to 80% */
+    -fx-scale-y: 0.9;
+}
+
+.nav-icon {
+    -fx-scale-shape: true;
+    -fx-position-shape: true;
+    -fx-background-color: rgba(255, 255, 255, 0.4); /* Default grayish-purple */
+
+    /* STRICTLY LOCK THE SIZE TO 24x24 */
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-max-width: 24px;
+    -fx-max-height: 24px;
+
+    -fx-scale-x: 0.7; /* Shrinks the width to 80% */
+    -fx-scale-y: 0.8;
+}
+
+/* --- 2. THE SPECIFIC ICON SHAPES --- */
+.icon-home {
+    -fx-shape: "M240-200h133.85v-237.69h212.3V-200H720v-360L480-740.77 240-560v360Zm-60 60v-450l300-225.77L780-590v450H526.15v-237.69h-92.3V-140H180Zm300-330.38Z" ;
+}
+
+.icon-gavel {
+    -fx-shape: "M162.31-130v-60h460v60h-460Zm232.15-206.31L182.31-548.46l70.15-72.15 214.15 212.15-72.15 72.15Zm237.08-237.08L419.39-787.54l72.15-70.15 212.15 212.15-72.15 72.15ZM824-173.85 315.85-682 358-724.15 866.15-216 824-173.85Z";
+}
+
+.icon-money {
+
+    -fx-shape: "M450.23-130v-83.69Q398-223 360.27-254.5t-55.73-88.11l55.54-23.08q16.15 46.46 46.03 71.08Q436-270 485.92-270q43.31 0 76.43-20.61 33.11-20.62 33.11-65.39 0-38.85-24.88-62.04-24.89-23.19-102.96-48.42-81.77-25.85-113.58-60.46-31.81-34.62-31.81-87.08 0-60.38 42.39-95.04 42.38-34.65 85.61-38.5V-830h60v82.46q45.77 6.08 76.92 29.77 31.16 23.69 48.46 61.62l-54.76 25.07Q567.69-660 544.15-676q-23.53-16-61.92-16-45.15 0-72.58 22-27.42 22-27.42 56 0 34.92 28.08 55.85 28.07 20.92 104.38 43.84 70.92 21.54 105.85 61.39 34.92 39.84 34.92 95.69 0 65.61-42.19 101.84-42.19 36.24-103.04 42.93V-130h-60Z";
+}
+
+.icon-bell {
+
+    -fx-shape: "M180-204.62v-59.99h72.31v-298.47q0-80.69 49.81-142.69 49.8-62 127.88-79.31V-810q0-20.83 14.57-35.42Q459.14-860 479.95-860q20.82 0 35.43 14.58Q530-830.83 530-810v24.92q78.08 17.31 127.88 79.31 49.81 62 49.81 142.69v298.47H780v59.99H180Zm300-293.07Zm-.07 405.38q-29.85 0-51.04-21.24-21.2-21.24-21.2-51.07h144.62q0 29.93-21.26 51.12-21.26 21.19-51.12 21.19Zm-167.62-172.3h335.38v-298.47q0-69.46-49.11-118.57-49.12-49.12-118.58-49.12-69.46 0-118.58 49.12-49.11 49.11-49.11 118.57v298.47Z";
+}
+
+/* --- 3. THE HOVER & ACTIVE STATES --- */
+.nav-button:hover .nav-icon {
+    -fx-background-color: rgba(255, 255, 255, 0.8); /* White on hover */
+}
+
+.nav-button:selected .nav-icon {
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
+}
+/* --- THE NOTIFICATION BADGE --- */
+.nav-badge {
+    -fx-background-color: #8b5cf6; /* bg-violet-500 */
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-padding: 2px 6px;
+    -fx-background-radius: 10px; /* rounded-full */
+    -fx-alignment: CENTER;
+}
+/* 3. The Big 'Sell Item' Action Button */
+.sell-item-button {
+    -fx-background-color: #261CC1; /* Solid bold blue/purple */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-family: "Century Gothic";
+    -fx-font-size: 18px;
+    -fx-alignment: CENTER;
+    -fx-padding: 12 25 12 3;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    /* This adds that premium glowing shadow from the blueprint! */
+    -fx-effect: dropshadow(three-pass-box, rgba(74, 58, 255, 0.3), 15, 0, 0, 5);
+}
+
+/* Make it darker when hovered */
+.sell-item-button:hover {
+    -fx-background-color: #392BD1;
+}
+.modern-card {
+    -fx-background-color: #FFFFFF; /* Pure white background */
+    -fx-background-radius: 15;     /* Smooth, rounded corners */
+
+    /* The magic drop shadow: very soft, slightly offset to the bottom */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.08), 15, 0, 0, 5);
+}
+.modern-title {
+    -fx-text-fill: #4A3AFF; /* Your main bold brand blue */
+    -fx-font-weight: bold;
+    -fx-font-size: 24px;    /* Scaled up from the 14px menu buttons */
+}
+
+/* Smaller Section Titles or Subtitles (Matches the Inactive Menu Buttons) */
+.modern-subtitle {
+    -fx-text-fill: #1A2CA3; /* Your soft, muted blue */
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 22px;    /* Just a little bigger than regular text */
+}
+.sell-item-button-small {
+    -fx-background-color: #261CC1; /* Your main brand blue */
+    -fx-text-fill: #FFFFFF;        /* White text/icon */
+    -fx-alignment: CENTER;         /* Forces the icon to dead-center */
+    -fx-padding: 8 8 8 8;          /* Small, perfectly even padding on all sides */
+    -fx-background-radius: 8;      /* Keeps the modern rounded corners */
+    -fx-cursor: hand;
+}
+
+/* The Hover Effect */
+.sell-item-button-small:hover {
+    -fx-background-color: #3A2CE6; /* A slightly deeper blue when hovered */
+}
+.modern-subtitle2 {
+    -fx-text-fill: #091413; /* Your soft, muted blue */
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;    /* Just a little bigger than regular text */
+}
+
+/* The main Category Button style */
+.category-btn {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 20;
+
+    -fx-border-radius: 20;
+    -fx-border-width: 2;
+    -fx-padding: 15;
+    -fx-cursor: hand;
+    -fx-text-fill: #091413;
+    -fx-font-family: "Segoe UI Symbol";
+    -fx-font-size: 20px;
+    /* This centers the icon and text vertically */
+    -fx-content-display: LEFT;  /* This moves the bubble to the left side */
+        -fx-graphic-text-gap: 20;   /* Space between the bubble and the text */
+        -fx-alignment: CENTER_LEFT; /* Aligns the whole group to the left of the button */
+
+        -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 10, 0, 0, 5);
+}
+
+/* Hover effect: The button turns slightly blue and lifts up */
+.category-btn:hover {
+    -fx-background-color: #f8f9ff;
+    -fx-border-color: #333dab;
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+    -fx-effect: dropshadow(three-pass-box, rgba(51, 61, 171, 0.2), 15, 0, 0, 8);
+}
+
+/* Pressed effect: The button shrinks slightly when clicked */
+.category-btn:pressed {
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+    -fx-background-color: #eeeeee;
+}
+
+/* Style for the icon inside the category button */
+.category-btn .image-view {
+    /* This ensures icons stay a consistent color if you use monochrome icons */
+    -fx-opacity: 0.8;
+}
+
+.category-btn:hover .image-view {
+    -fx-opacity: 1.0;
+}
+.icon-bubble {
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-max-width: 40px;
+    -fx-max-height: 40px;
+
+    /* THE MAGIC RADIUS: 15 is the "sweet spot" for modern rounded squares */
+    -fx-background-radius: 12;
+
+    -fx-alignment: CENTER;
+}
+
+/* Color variations for the bubbles */
+.bubble-yellow {
+    -fx-background-color: #F8DE22; /* Very light yellow */
+}
+
+.bubble-green {
+    -fx-background-color: #78C841; /* Very light green */
+}
+
+.bubble-brand {
+    -fx-background-color: #53CBF3; /* Very light purple/blue */
+}
+.bubble-red {
+ -fx-background-color: #F63049
+}
+.sell-item-button2 {
+    -fx-background-color: #261CC1; /* Solid bold blue/purple */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-family: "Century Gothic";
+    -fx-font-size: 20px;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-padding: 12 25 12 20;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    /* This adds that premium glowing shadow from the blueprint! */
+    -fx-effect: dropshadow(three-pass-box, rgba(74, 58, 255, 0.3), 15, 0, 0, 5);
+}
+
+/* Make it darker when hovered */
+.sell-item-button2:hover {
+    -fx-background-color: #392BD1;
+}
+.modern-combo-box {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #9aa6b2; /* Subtle gray border */
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-size: 16px;
+    -fx-padding: 2px;
+    -fx-cursor: hand;
+}
+
+/* Make the border turn blue when clicked/focused */
+.modern-combo-box:focused, .modern-combo-box:showing {
+    -fx-border-color: #2563eb;
+}
+
+/* 2. The Text Inside the Box */
+.modern-combo-box .list-cell {
+    -fx-text-fill: #222831;
+    -fx-background-color: transparent;
+    -fx-padding: 8px 10px;
+}
+
+/* 3. The Dropdown Arrow Area */
+.modern-combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0px 12px 0px 0px;
+}
+
+/* The actual arrow triangle */
+.modern-combo-box .arrow {
+    -fx-background-color: #222831;
+}
+
+/* 4. The Popup Menu (The list that drops down) */
+.modern-combo-box-popup .list-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #9aa6b2;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 4px;
+    /* Adds a modern drop-shadow behind the menu */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0, 0, 4);
+}
+
+/* 5. The Individual Items in the Dropdown */
+.modern-combo-box-popup .list-cell {
+    -fx-text-fill: #222831;
+    -fx-padding: 10px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 5px;
+}
+
+/* When hovering over an item in the list */
+.modern-combo-box-popup .list-cell:hover {
+    -fx-background-color: #f0f4f8; /* Very light blue/gray */
+    -fx-text-fill: #333dab;
+}
+
+/* When an item is currently selected */
+.modern-combo-box-popup .list-cell:selected {
+    -fx-background-color: #333dab;
+    -fx-text-fill: #FFFFFF;
+}
+/* =========================================
+   1. MAIN DATE PICKER INPUT BOX
+   ========================================= */
+.modern-date-picker {
+    -fx-background-color: transparent;
+}
+
+/* The text field where the date is typed */
+.modern-date-picker > .text-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d1d5db;
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 8px 12px;
+    -fx-font-size: 14px;
+    -fx-text-fill: #374151;
+}
+
+/* When the user clicks into the text field */
+.modern-date-picker > .text-field:focused {
+    -fx-border-color: #3b82f6;
+    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.3), 5, 0, 0, 0);
+}
+
+/* =========================================
+   2. THE CALENDAR ICON / ARROW BUTTON
+   ========================================= */
+.modern-date-picker .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 10 0 10;
+    -fx-cursor: hand;
+}
+
+/* The actual little calendar/arrow icon */
+.modern-date-picker .arrow-button .arrow {
+    -fx-background-color: #9ca3af;
+}
+
+/* Change icon color when hovering */
+.modern-date-picker .arrow-button:hover .arrow {
+    -fx-background-color: #3b82f6;
+}
+
+/* =========================================
+   3. THE POPUP CALENDAR BOX
+   (Must use the default .date-picker-popup class!)
+   ========================================= */
+.date-picker-popup {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.15), 10, 0, 0, 5);
+}
+
+/* =========================================
+   4. MONTH & YEAR HEADER (Top of Popup)
+   ========================================= */
+.date-picker-popup .month-year-pane {
+    -fx-background-color: #f9fafb;
+    -fx-padding: 10px;
+    -fx-background-radius: 8px 8px 0 0;
+}
+
+.date-picker-popup .month-year-pane .label {
+    -fx-text-fill: #111827;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+
+/* The left/right arrows to change the month */
+.date-picker-popup .month-year-pane .left-button .arrow,
+.date-picker-popup .month-year-pane .right-button .arrow {
+    -fx-background-color: #6b7280;
+}
+
+.date-picker-popup .month-year-pane .left-button:hover .arrow,
+.date-picker-popup .month-year-pane .right-button:hover .arrow {
+    -fx-background-color: #3b82f6;
+}
+
+/* =========================================
+   5. INDIVIDUAL DAY CELLS (The Dates)
+   ========================================= */
+.date-picker-popup .calendar-grid {
+    -fx-background-color: #ffffff;
+    -fx-padding: 10px;
+}
+
+.date-picker-popup .day-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #374151;
+    -fx-font-size: 13px;
+    -fx-padding: 5px;
+    -fx-background-radius: 4px;
+}
+
+/* Hovering over a date */
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: #eff6ff;
+    -fx-text-fill: #1d4ed8;
+    -fx-cursor: hand;
+}
+
+/* The currently selected date */
+.date-picker-popup .day-cell:selected {
+    -fx-background-color: #3b82f6;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+/* Today's date (puts a subtle border around the current day) */
+.date-picker-popup .today {
+    -fx-border-color: #3b82f6;
+    -fx-border-width: 1px;
+    -fx-border-radius: 4px;
+}
+.sell-item-button3 {
+    -fx-background-color: #261CC1; /* Solid bold blue/purple */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-family: "Century Gothic";
+    -fx-font-size: 18px;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-padding: 12 25 12 25;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    /* This adds that premium glowing shadow from the blueprint! */
+    -fx-effect: dropshadow(three-pass-box, rgba(74, 58, 255, 0.3), 15, 0, 0, 5);
+}
+
+/* Make it darker when hovered */
+.sell-item-button3:hover {
+    -fx-background-color: #392BD1;
+}
+.modern-link {
+    -fx-text-fill: #2563eb; /* A sleek, modern vibrant blue */
+    -fx-underline: false;   /* Removes the default underline */
+    -fx-font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-weight: bold;
+
+    -fx-cursor: hand;       /* Turns the mouse into a pointer */
+    -fx-background-color: transparent;
+}
+
+/* What happens when the mouse hovers over it */
+.modern-link:hover {
+    -fx-text-fill: #1d4ed8;/* Slightly darker blue */
+    -fx-underline: true;    /* Adds the underline back on hover */
+}
+
+/* Removes the ugly dotted focus box when clicked */
+.modern-link:focused {
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.modern-link2 {
+    -fx-text-fill: #2563eb; /* A sleek, modern vibrant blue */
+    -fx-underline: false;   /* Removes the default underline */
+    -fx-font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-weight: bold;
+
+    -fx-cursor: hand;       /* Turns the mouse into a pointer */
+    -fx-background-color: transparent;
+}
+
+/* What happens when the mouse hovers over it */
+.modern-link2:hover {
+    -fx-text-fill: #1d4ed8;/* Slightly darker blue */
+    -fx-font-size: 20px;
+    -fx-underline: true;    /* Adds the underline back on hover */
+}
+
+/* Removes the ugly dotted focus box when clicked */
+.modern-link2:focused {
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-font-size: 20px;
+    -fx-faint-focus-color: transparent;
+}
+.modern-link3 {
+    -fx-text-fill: #ffffff; /* A sleek, modern vibrant blue */
+    -fx-underline: false;   /* Removes the default underline */
+    -fx-font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-weight: bold;
+
+    -fx-cursor: hand;       /* Turns the mouse into a pointer */
+    -fx-background-color: transparent;
+}
+
+/* What happens when the mouse hovers over it */
+.modern-link3:hover {
+    -fx-text-fill: #FFF6F6;/* Slightly darker blue */
+    -fx-font-size: 14px;
+    -fx-underline: true;    /* Adds the underline back on hover */
+}
+
+/* Removes the ugly dotted focus box when clicked */
+.modern-link3:focused {
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-font-size: 14px;
+    -fx-faint-focus-color: transparent;
+}
+.card-image-box {
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 10;
+}
+
+.action-button {
+    -fx-text-fill: white;
+    -fx-font-family: 'Segoe UI', sans-serif;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+}
+
+.action-button:hover {
+    -fx-background-color: #0041a8; /* Darker blue on hover */
+}
+
+.action-button:pressed {
+    -fx-background-color: #003282; /* Even darker on click */
+}
+
+/* The Condition Badge */
+.condition-badge {
+    -fx-background-color: #e8f4fd; /* Light blue background */
+    -fx-text-fill: #3498db;        /* Dark blue text */
+    -fx-padding: 4 10 4 10;
+    -fx-background-radius: 20;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-border-color: #3498db;
+    -fx-border-width: 0.5px;
+    -fx-border-radius: 20;
+}
+
+
+/* 1. Clean up the ScrollPane background */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* 2. Set the thickness of the scrollbar */
+.scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 12px; /* Makes it nice and thin */
+}
+
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-pref-height: 12px;
+}
+
+/* 3. Style the Track (the groove it slides in) */
+.scroll-bar:vertical .track,
+.scroll-bar:horizontal .track {
+    -fx-background-color: transparent; /* Hides the track to look cleaner */
+    -fx-border-color: transparent;
+    -fx-background-radius: 10px;
+}
+
+/* 4. Style the Thumb (the piece you actually grab) */
+.scroll-bar:vertical .thumb,
+.scroll-bar:horizontal .thumb {
+    -fx-background-color: #c4c4c4; /* Soft gray */
+    -fx-background-radius: 10px; /* Perfectly rounded edges */
+}
+
+/* 5. Make it interactive (darkens when you hover or click) */
+.scroll-bar:vertical .thumb:hover,
+.scroll-bar:horizontal .thumb:hover {
+    -fx-background-color: #a0a0a0;
+}
+
+.scroll-bar:vertical .thumb:pressed,
+.scroll-bar:horizontal .thumb:pressed {
+    -fx-background-color: #787878;
+}
+
+/* 6. NUKE THE ARROWS (Hides the clunky up/down buttons completely) */
+.scroll-bar:vertical .increment-button,
+.scroll-bar:vertical .decrement-button,
+.scroll-bar:horizontal .increment-button,
+.scroll-bar:horizontal .decrement-button {
+    -fx-background-color: transparent;
+    -fx-pref-height: 0px;
+    -fx-pref-width: 0px;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: " "; /* Replaces the arrow graphic with absolutely nothing */
+    -fx-padding: 0;
+}
+.sell-item-button_new {
+    -fx-background-color: #261CC1; /* Solid bold blue/purple */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI Semibold";
+    -fx-font-size: 18px;
+    -fx-alignment: CENTER;
+    -fx-padding: 12 25 12 25;
+    -fx-background-radius: 10;
+    -fx-cursor: hand;
+    /* This adds that premium glowing shadow from the blueprint! */
+    -fx-effect: dropshadow(three-pass-box, rgba(74, 58, 255, 0.3), 15, 0, 0, 5);
+}
+
+/* Make it darker when hovered */
+.sell-item-button_new:hover {
+    -fx-background-color: #392BD1;
+}
+/* =========================================
+   CUSTOM CLASS: modern-price-chart
+   ========================================= */
+
+/* 1. Transparent backgrounds */
+.modern-price-chart {
+    -fx-padding: 10px;
+    -fx-background-color: transparent;
+}
+.modern-price-chart .chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+/* 2. Grid lines */
+.modern-price-chart .chart-vertical-grid-lines {
+    -fx-stroke: transparent;
+}
+.modern-price-chart .chart-horizontal-grid-lines {
+    -fx-stroke: #e0e0e0;
+    -fx-stroke-dash-array: 5 5;
+}
+
+/* 3. Axis text and lines */
+.modern-price-chart .axis {
+    -fx-tick-label-fill: #8e8e93;
+    -fx-font-family: "Segoe UI", sans-serif;
+    -fx-font-size: 12px;
+}
+.modern-price-chart .axis-tick-mark,
+.modern-price-chart .axis-minor-tick-mark {
+    -fx-stroke: transparent;
+}
+.modern-price-chart .chart-bottom-axis line,
+.modern-price-chart .chart-left-axis line {
+    -fx-stroke: #e0e0e0;
+    -fx-stroke-width: 1px;
+}
+
+/* 4. Hide legend background */
+.modern-price-chart .chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 0px;
+}
+
+/* 5. The Line */
+.modern-price-chart .default-color0.chart-series-line {
+    -fx-stroke: #261CC1;
+    -fx-stroke-width: 3px;
+}
+
+/* 6. The Dots */
+.modern-price-chart .default-color0.chart-line-symbol {
+    -fx-background-color: #261CC1, white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 6px;
+    -fx-padding: 5px;
+}
+
+/* 7. Dot Hover Effect */
+.modern-price-chart .default-color0.chart-line-symbol:hover {
+    -fx-background-color: white, #261CC1;
+    -fx-scale-x: 1.3;
+    -fx-scale-y: 1.3;
+    -fx-cursor: hand;
+}
+.card-furniture {
+    -fx-background-image: url('com/example/auctionapp/images/furniture.jpg');
+    -fx-background-size: cover;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+}
+.card-vehicles {
+    -fx-background-image: url('com/example/auctionapp/images/car.png');
+    -fx-background-size: cover;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+}
+.card-electronics {
+    -fx-background-image: url('com/example/auctionapp/images/pc-home-banner.png');
+    -fx-background-size: cover;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+}
+.card-fashion {
+    -fx-background-image: url('com/example/auctionapp/images/cloth.png');
+    -fx-background-size: cover;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+}
+.card-Books {
+    -fx-background-image: url('com/example/auctionapp/images/book.png');
+    -fx-background-size: cover;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+}
+.card-collectables {
+    -fx-background-image: url('com/example/auctionapp/images/Collectables.png');
+    -fx-background-size: cover;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+}
+.card-art {
+    -fx-background-image: url('com/example/auctionapp/images/Art.png');
+    -fx-background-size: cover;
+    -fx-background-radius: 30;
+    -fx-cursor: hand;
+}
+.card-sport {
+     -fx-background-image: url('com/example/auctionapp/images/Sport.jpg');
+     -fx-background-size: cover;
+     -fx-background-radius: 30;
+     -fx-cursor: hand;
+}
+
+.auction-button {
+
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff;
+
+    -fx-background-radius: 14px;
+    -fx-graphic-text-gap: 8px;
+    -fx-cursor: hand;
+
+    -fx-background-insets: 0 !important;
+
+    /* 2. The gradient */
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5) !important;
+
+    /* 3. The Shadow */
+    -fx-effect: dropshadow(three-pass-box, rgba(139, 92, 246, 0.25), 15, 0, 0, 5);
+}
+
+/* OVERRIDE THE BLUE FOCUS STATE */
+.auction-button:focused {
+    -fx-background-insets: 0 !important;
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5) !important;
+}
+
+.auction-button:hover {
+    -fx-background-insets: 0 !important;
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #8b4ff0, #6159e8) !important;
+    -fx-effect: dropshadow(three-pass-box, rgba(139, 92, 246, 0.40), 20, 0, 0, 6);
+}
+
+.auction-button:pressed {
+    -fx-translate-y: 2px;
+    -fx-effect: dropshadow(three-pass-box, rgba(139, 92, 246, 0.15), 5, 0, 0, 2);
+}
+.details-button {
+    /* Transparent background to make it a "Ghost" button */
+    -fx-background-color: #333348;
+
+    /* border border-white/8 */
+    -fx-border-color: rgba(255, 255, 255, 0.08);
+    -fx-border-width: 1px;
+
+    /* rounded-xl */
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px; /* Always match background radius to border radius */
+
+    /* text-[#f2f2f280] and font settings */
+    -fx-text-fill: rgba(242, 242, 242, 0.5);
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+
+    /* py-2.5 (10px top/bottom). Adding 20px left/right for proportion */
+    -fx-padding: 10px 20px;
+
+    /* transition-all duration-200 (Makes hover feel clickable) */
+    -fx-cursor: hand;
+}
+
+/* --- HOVER STATE --- */
+.details-button:hover {
+    /* hover:border-white/15 */
+    -fx-border-color: rgba(255, 255, 255, 0.15);
+
+    /* hover:text-white/80 */
+    -fx-text-fill: rgba(255, 255, 255, 0.8);
+}
+
+/* --- PRESSED/ACTIVE STATE (Optional, but good for UX) --- */
+.details-button:pressed {
+    -fx-border-color: rgba(255, 255, 255, 0.25);
+    -fx-text-fill: rgba(255, 255, 255, 1.0);
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+}
+.auction-card {
+    /* 1. The Rounding */
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+
+    /* 2. Optional: Add a subtle border so the rounding is visible */
+    -fx-border-color: rgba(255, 255, 255, 0.1);
+    -fx-border-width: 1px;
+
+    /* 3. CRITICAL: Prevent children from leaking out of the rounded corners */
+    -fx-background-color: #13131B; /* Match your card's background color */
+}
+
+/* Add a hover effect for extra polish */
+.auction-card:hover {
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+}
+.modern-switch .box {
+    -fx-background-color: #2d2d3a;
+    -fx-background-radius: 20;
+    -fx-padding: 2 16 2 16;
+    -fx-cursor: hand;
+}
+
+/* The circle inside the switch */
+.modern-switch .mark {
+    -fx-background-color: #ffffff;
+    -fx-shape: "M0 10 A10 10 0 1 1 0 10.1 Z"; /* Creates the circle */
+    -fx-scale-x: 1.4;
+    -fx-scale-y: 1.4;
+    -fx-translate-x: -12; /* Starting position */
+}
+
+/* When the switch is ON */
+.modern-switch:selected .box {
+    -fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5);
+}
+
+.modern-switch:selected .mark {
+    -fx-translate-x: 12; /* Move circle to the right */
+}
+
+/* Hide the default checkmark tick */
+.modern-switch:selected .mark {
+    -fx-background-image: null;
+}

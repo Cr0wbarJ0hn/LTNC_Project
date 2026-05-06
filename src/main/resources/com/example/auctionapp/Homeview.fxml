@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="1147.0" spacing="20.0" style="-fx-background-color: #16161f;" styleClass="modern-card" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.HomeController">
+   <padding>
+      <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+   </padding>
+   <children>
+      <VBox spacing="5.0">
+         <children>
+            <Label fx:id="welcomeLabel" text="Welcome back, Username" textFill="#fcfcfc">
+               <font>
+                  <Font name="Segoe UI Bold" size="26.0" />
+               </font>
+            </Label>
+         </children>
+      </VBox>
+      <VBox spacing="15.0">
+         <children>
+            <Label text="Browse categories" textFill="#9899ab">
+               <font>
+                  <Font name="Segoe UI Emoji" size="20.0" />
+               </font>
+            </Label>
+            <HBox spacing="20.0" />
+            <AnchorPane prefHeight="986.0" prefWidth="704.0">
+               <children>
+                  <StackPane fx:id="furnitureCard" maxHeight="-Infinity" maxWidth="-Infinity" onMouseClicked="#browseFurniture" prefHeight="374.0" prefWidth="1081.0" styleClass="card-furniture" stylesheets="@../../../style.css">
+                     <children>
+                        <Region prefHeight="337.0" prefWidth="924.0" style="-fx-background-color: linear-gradient(to top, rgba(0,0,0,1.0) 0%, rgba(0,0,0,0) 70%); -fx-background-radius: 15;" />
+                        <VBox alignment="BOTTOM_LEFT" spacing="2.0" style="-fx-padding: 15;">
+                           <children>
+                              <Label prefHeight="41.0" prefWidth="125.0" style="-fx-text-fill: white; -fx-font-size: 26px; -fx-font-weight: bold;" text="Furniture">
+                                 <font>
+                                    <Font />
+                                 </font></Label>
+                           </children>
+                        </VBox>
+                        <ImageView fitHeight="337.0" fitWidth="1057.0" pickOnBounds="true" preserveRatio="true" />
+                     </children>
+                  </StackPane>
+                  <StackPane fx:id="vehiclesCard" layoutY="402.0" maxHeight="-Infinity" maxWidth="-Infinity" onMouseClicked="#browseVehicles" prefHeight="276.0" prefWidth="520.0" styleClass="card-vehicles" stylesheets="@../../../style.css">
+                     <children>
+                        <Region prefHeight="220.0" prefWidth="525.0" style="-fx-background-color: linear-gradient(to top, rgba(0,0,0,1.0) 0%, rgba(0,0,0,0) 60%); -fx-background-radius: 15;" />
+                        <Pane prefHeight="229.0" prefWidth="463.0">
+                           <children>
+                              <Label layoutX="14.0" layoutY="230.0" style="-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;" text="Vehicles" />
+                           </children>
+                        </Pane>
+                     </children>
+                  </StackPane>
+                  <StackPane fx:id="electronicsCard" layoutX="559.0" layoutY="402.0" onMouseClicked="#browseElectronics" prefHeight="276.0" prefWidth="520.0" styleClass="card-electronics" stylesheets="@../../../style.css">
+                     <children>
+                        <Region style="-fx-background-color: linear-gradient(to top, rgba(0,0,0,1.0) 0%, rgba(0,0,0,0) 80%); -fx-background-radius: 15;" />
+                        <VBox alignment="BOTTOM_LEFT" prefHeight="218.0" prefWidth="605.0" spacing="2.0" style="-fx-padding: 15;">
+                           <children>
+                              <Label style="-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;" text="Electronics" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </StackPane>
+                  <StackPane fx:id="fashionCard" layoutX="559.0" layoutY="717.0" onMouseClicked="#browseClothes" prefHeight="276.0" prefWidth="520.0" styleClass="card-fashion">
+                     <children>
+                        <Region style="-fx-background-color: linear-gradient(to top, rgba(0,0,0,1.0) 0%, rgba(0,0,0,0) 80%); -fx-background-radius: 15;" />
+                        <VBox alignment="BOTTOM_LEFT" prefHeight="229.0" prefWidth="476.0" spacing="2.0" style="-fx-padding: 15;">
+                           <children>
+                              <Label style="-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;" text="Fashion" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </StackPane>
+                  <StackPane fx:id="bookCard" layoutY="717.0" onMouseClicked="#browseBooks" prefHeight="276.0" prefWidth="520.0" styleClass="card-Books">
+                     <children>
+                        <Region style="-fx-background-color: linear-gradient(to top, rgba(0,0,0,1.0) 0%, rgba(0,0,0,0) 80%); -fx-background-radius: 15;" />
+                        <VBox fx:id="booksCard" alignment="BOTTOM_LEFT" prefHeight="228.0" prefWidth="488.0" spacing="2.0" style="-fx-padding: 15;">
+                           <children>
+                              <Label style="-fx-text-fill: white; -fx-font-size: 22px; -fx-font-weight: bold;" text="Books" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </StackPane>
+               </children>
+            </AnchorPane>
+         </children>
+      </VBox>
+   </children>
+</VBox>

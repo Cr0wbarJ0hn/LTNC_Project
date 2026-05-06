@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1200.0" prefWidth="1900.0" style="-fx-background-color: #FFFFFF;" styleClass="modern-card" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.DashboardController">
+
+   <left>
+      <Pane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="300.0" style="-fx-background-color: #20202E;" stylesheets="@../../../style.css" BorderPane.alignment="CENTER">
+         <children>
+            <ToggleButton fx:id="HomeButton" alignment="CENTER_LEFT" graphicTextGap="5.0" layoutX="15.0" layoutY="175.0" mnemonicParsing="false" onAction="#loadHomeView" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="Home">
+               <toggleGroup>
+                  <ToggleGroup fx:id="navGroup" />
+               </toggleGroup>
+               <font>
+                  <Font name="Berlin Sans FB Demi Bold" size="12.0" />
+               </font>
+               <graphic>
+                  <HBox prefHeight="5.0" prefWidth="24.0">
+                     <children>
+                        <Region maxHeight="29.0" maxWidth="33.0" minHeight="22.0" prefHeight="29.0" prefWidth="30.0">
+                           <styleClass>
+                              <String fx:value="icon-home" />
+                              <String fx:value="nav-icon" />
+                           </styleClass>
+                        </Region>
+                     </children>
+                  </HBox>
+               </graphic>
+            </ToggleButton>
+            <ToggleButton fx:id="MyBidButton" layoutX="15.0" layoutY="325.0" mnemonicParsing="false" onAction="#loadMyBids" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="My bids" toggleGroup="$navGroup">
+               <graphic>
+                  <HBox prefHeight="0.0" prefWidth="0.0">
+                     <children>
+                        <Region maxHeight="39.0" maxWidth="27.0" minHeight="0.0" minWidth="0.0" prefHeight="0.0" prefWidth="0.0">
+                           <styleClass>
+                              <String fx:value="nav-icon" />
+                              <String fx:value="icon-money" />
+                           </styleClass>
+                        </Region>
+                     </children>
+                  </HBox>
+               </graphic>
+            </ToggleButton>
+            <ToggleButton fx:id="NotifButton" graphicTextGap="10.0" layoutX="15.0" layoutY="400.0" mnemonicParsing="false" onAction="#loadNotif" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="Notifications" toggleGroup="$navGroup">
+               <graphic>
+                  <HBox prefHeight="0.0" prefWidth="0.0">
+                     <children>
+                        <Region prefHeight="14.0" prefWidth="37.0">
+                           <styleClass>
+                              <String fx:value="nav-icon" />
+                              <String fx:value="icon-bell" />
+                           </styleClass>
+                        </Region>
+                     </children>
+                  </HBox>
+               </graphic>
+            </ToggleButton>
+            <Button graphicTextGap="20.0" layoutX="41.0" layoutY="1081.0" mnemonicParsing="false" onAction="#sellItem" prefHeight="70.0" prefWidth="223.0" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);;" styleClass="sell-item-button" stylesheets="@../../../style.css" text="Start an auction">
+               <font>
+                  <Font name="Segoe UI Bold" size="14.0" />
+               </font>
+               <graphic>
+                  <ImageView fitHeight="32.0" fitWidth="33.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@icons/add_2_24dp_FFFFFF_FILL0_wght300_GRAD0_opsz24.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+            <ToggleButton fx:id="MyAuctionButton" graphicTextGap="12.0" layoutX="15.0" layoutY="250.0" mnemonicParsing="false" onAction="#loadMyauction" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="My auctions" toggleGroup="$navGroup">
+               <graphic>
+                  <HBox prefHeight="24.0" prefWidth="23.0">
+                     <children>
+                        <Region maxHeight="30.0" maxWidth="29.0" prefHeight="30.0" prefWidth="29.0">
+                           <styleClass>
+                              <String fx:value="nav-icon" />
+                              <String fx:value="icon-gavel" />
+                           </styleClass>
+                        </Region>
+                     </children>
+                  </HBox>
+               </graphic>
+            </ToggleButton>
+            <Label graphicTextGap="0.0" layoutX="20.0" layoutY="33.0" prefHeight="100.0" prefWidth="266.0" text="UET auction house" textAlignment="CENTER" textFill="#c3c6e4" wrapText="true">
+               <font>
+                  <Font name="Segoe UI Bold" size="30.0" />
+               </font>
+               <graphic>
+                  <ImageView fitHeight="67.0" fitWidth="65.0">
+                     <image>
+                        <Image url="@Gemini_Generated_Image_x5bve4x5bve4x5bv-Photoroom.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Label>
+            <Line endX="282.0" endY="153.29290771484375" startX="19.0" startY="153.29290771484375" stroke="#9aa6b2" />
+         </children>
+      </Pane>
+   </left>
+
+   <right>
+      <StackPane fx:id="rightPane" prefHeight="1200.0" prefWidth="453.0" BorderPane.alignment="CENTER">
+         <children>
+
+            <VBox fx:id="emptyStatePane" prefHeight="875.0" prefWidth="348.0" style="-fx-background-color: #1A1A25;" stylesheets="@../../../style.css" visible="false">
+               <children>
+                  <Region prefHeight="478.0" prefWidth="453.0" styleClass="icon-box" stylesheets="@../../../style.css">
+                     <VBox.margin>
+                        <Insets left="70.0" top="300.0" />
+                     </VBox.margin>
+                  </Region>
+                  <Label alignment="CENTER" prefHeight="131.0" prefWidth="401.0" style="-fx-text-fill: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);" stylesheets="@../../../style.css" text="Your selected item will be shown here" textAlignment="CENTER" wrapText="true">
+                     <padding>
+                        <Insets left="10.0" />
+                     </padding>
+                     <VBox.margin>
+                        <Insets left="25.0" top="100.0" />
+                     </VBox.margin>
+                     <font>
+                        <Font name="Segoe UI Semibold" size="30.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+
+            <VBox fx:id="itemDetailsPane" prefHeight="1050.0" prefWidth="470.0" style="-fx-background-color: #20202E; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 15, 0, 0, 0);">
+               <children>
+
+                  <StackPane prefHeight="400.0" prefWidth="470.0" style="-fx-background-color: #20202E;">
+                     <children>
+                        <ImageView fx:id="previewImage" fitHeight="399.0" fitWidth="427.0" pickOnBounds="true" preserveRatio="true">
+                           <StackPane.margin>
+                              <Insets bottom="10.0" top="20.0" />
+                           </StackPane.margin></ImageView>
+                     </children>
+                  </StackPane>
+
+                  <VBox spacing="30.0" style="-fx-background-color: # #20202E;" VBox.vgrow="ALWAYS">
+                     <padding>
+                        <Insets bottom="40.0" left="35.0" right="35.0" top="30.0" />
+                     </padding>
+                     <children>
+
+                        <Label fx:id="previewTitle" alignment="TOP_LEFT" prefHeight="110.0" prefWidth="360.0" text="Item Name" textFill="WHITE" wrapText="true">
+                           <font>
+                              <Font name="Segoe UI" size="32.0" />
+                           </font>
+                        </Label>
+
+                        <HBox prefHeight="58.0" prefWidth="348.0" spacing="15.0">
+                           <children>
+                              <VBox alignment="CENTER_LEFT" prefHeight="58.0" prefWidth="59.0" spacing="2.0" style="-fx-background-color: #333348; -fx-background-radius: 12; -fx-padding: 10 15 10 15;" HBox.hgrow="ALWAYS">
+                                 <children>
+                                    <Label text="Seller" textFill="#8e8e93">
+                                       <font><Font name="Segoe UI" size="13.0" /></font>
+                                    </Label>
+                                    <Label fx:id="previewSeller" text="Username" textFill="WHITE">
+                                       <font><Font name="Segoe UI" size="15.0" /></font>
+                                    </Label>
+                                 </children>
+                              </VBox>
+                              <VBox alignment="CENTER_LEFT" prefHeight="58.0" prefWidth="56.0" spacing="2.0" style="-fx-background-color: #333348; -fx-background-radius: 12; -fx-padding: 10 15 10 15;" HBox.hgrow="ALWAYS">
+                                 <children>
+                                    <Label text="Condition" textFill="#8e8e93">
+                                       <font><Font name="Segoe UI" size="13.0" /></font>
+                                    </Label>
+                                    <Label fx:id="conditionLabel" text="Excellent" textFill="WHITE">
+                                       <font><Font name="Segoe UI" size="15.0" /></font>
+                                    </Label>
+                                 </children>
+                              </VBox>
+                              <VBox alignment="CENTER_LEFT" prefHeight="58.0" prefWidth="52.0" spacing="2.0" style="-fx-background-color: #333348; -fx-background-radius: 12; -fx-padding: 10 15 10 15;" HBox.hgrow="ALWAYS">
+                                 <children>
+                                    <Label text="Time Left" textFill="#8e8e93">
+                                       <font><Font name="Segoe UI" size="13.0" /></font>
+                                    </Label>
+                                    <Label fx:id="timeLeftLabel" text="2d 4h" textFill="WHITE">
+                                       <font><Font name="Segoe UI" size="15.0" /></font>
+                                    </Label>
+                                 </children>
+                              </VBox>
+                           </children>
+                        </HBox>
+                        <VBox prefHeight="240.0" prefWidth="459.0" spacing="10.0">
+                           <children>
+                              <Label text="Description" textFill="#ebe0e0">
+                                 <font>
+                                    <Font name="Segoe UI Bold" size="20.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="previewDescription" alignment="TOP_LEFT" prefHeight="185.0" prefWidth="492.0" text="Description details..." textFill="#b9c5d0" wrapText="true">
+                                 <font>
+                                    <Font name="Segoe UI" size="16.0" />
+                                 </font>
+                                 <style>
+                                    -fx-line-spacing: 5px;
+                                 </style>
+                              </Label>
+                           </children>
+                        </VBox>
+
+                        <Region VBox.vgrow="ALWAYS" />
+                        <Separator prefHeight="34.0" prefWidth="316.0" />
+
+                        <HBox prefHeight="44.0" prefWidth="353.0" spacing="50.0">
+                           <children>
+                              <VBox spacing="2.0">
+                                 <children>
+                                    <Label text="Starting Bid" textFill="#8e8e93">
+                                       <font><Font name="Segoe UI" size="14.0" /></font>
+                                    </Label>
+                                    <Label fx:id="startingBidLabel" text="\$8,000" textFill="WHITE">
+                                       <font><Font name="Segoe UI" size="20.0" /></font>
+                                    </Label>
+                                 </children>
+                              </VBox>
+                              <VBox alignment="CENTER" prefHeight="44.0" prefWidth="202.0" spacing="2.0">
+                                 <children>
+                                    <Label text="Current Bid" textFill="#8e8e93">
+                                       <font>
+                                          <Font name="Segoe UI" size="14.0" />
+                                       </font>
+                                    </Label>
+                                    <Label fx:id="currentBidLabel" text="\$12,500">
+                                       <font>
+                                          <Font name="Segoe UI Bold" size="20.0" />
+                                       </font>
+                                       <style>-fx-text-fill: #A684FF;</style>
+                                    </Label>
+                                 </children>
+                              </VBox>
+                              <VBox spacing="2.0" />
+                           </children>
+                        </HBox>
+
+                        <HBox prefHeight="52.0" prefWidth="378.0" spacing="15.0">
+                           <children>
+                              <Button fx:id="bidButton" maxWidth="Infinity" mnemonicParsing="false" prefHeight="56.0" prefWidth="223.0" text="Place Bid" HBox.hgrow="ALWAYS">
+                                 <font>
+                                    <Font name="Segoe UI Bold" size="18.0" />
+                                 </font>
+                                 <style>
+                                    -fx-background-color: #261CC1;
+                                    -fx-text-fill: white;
+                                    -fx-background-radius: 15;
+                                    -fx-cursor: hand;-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);</style>
+                              </Button>
+                              <Button fx:id="infoButton" mnemonicParsing="false" onAction="#loadDetailedBidScreen" prefHeight="187.0" prefWidth="155.0" styleClass="details-button" text="See item details">
+                                 <font>
+                                    <Font name="Segoe UI Bold" size="16.0" />
+                                 </font>
+                              </Button>
+                           </children>
+                           <VBox.margin>
+                              <Insets top="10.0" />
+                           </VBox.margin>
+                        </HBox>
+
+                     </children>
+                  </VBox>
+               </children>
+            </VBox>
+         </children>
+      </StackPane>
+   </right>
+
+   <center>
+      <StackPane fx:id="centerContentArea" prefHeight="1200.0" prefWidth="864.0" style="-fx-background-color: #13131B;" BorderPane.alignment="CENTER">
+         <BorderPane.margin>
+            <Insets />
+         </BorderPane.margin>
+      </StackPane>
+   </center>
+
+</BorderPane>

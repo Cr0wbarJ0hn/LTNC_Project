@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.TilePane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Rectangle?>
+<?import java.lang.String?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.TitledPane?>
+<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="847.0" prefWidth="1061.0" styleClass="root-al" stylesheets="@../css/auctionhub.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionListController">
+   <children>
+      <VBox prefHeight="847.0" prefWidth="253.0" styleClass="sidebar-al">
+         <children>
+            <VBox prefHeight="47.0" prefWidth="211.0" styleClass="sidebar-logo-al">
+               <children>
+                  <Label styleClass="logo-name-al" text="AuctionHub" />
+                  <Label text="ĐẤU GIÁ TRỤC TUYẾN" />
+               </children>
+            </VBox>
+            <Label styleClass="menu-sec-al" text="CHÍNH" />
+            <Button mnemonicParsing="false" onAction="#filterAll" prefHeight="26.0" prefWidth="217.0" text="Tất cả phiên">
+               <styleClass>
+                  <String fx:value="menu-btn-al" />
+                  <String fx:value="menu-active-al" />
+               </styleClass>
+            </Button>
+            <Button mnemonicParsing="false" prefHeight="26.0" prefWidth="219.0" styleClass="menu-btn-al" text="♥   Theo dõi" />
+            <Button mnemonicParsing="false" prefHeight="26.0" prefWidth="214.0" styleClass="menu-btn-al" text="◎   Đang đấu giá" />
+            <Button mnemonicParsing="false" prefHeight="26.0" prefWidth="213.0" styleClass="menu-btn-al" text="✓   Đã thắng" />
+            <Label styleClass="menu-sec-al" text="DANH MỤC" />
+            <Button mnemonicParsing="false" onAction="#filterElectronics" prefHeight="23.0" prefWidth="217.0" styleClass="menu-btn-al" text="💻   Điện tử" />
+            <Button mnemonicParsing="false" onAction="#filterArt" prefHeight="23.0" prefWidth="210.0" styleClass="menu-btn-al" text="🎨   Nghệ thuật" />
+            <Button mnemonicParsing="false" onAction="#filterVehicle" prefHeight="23.0" prefWidth="210.0" styleClass="menu-btn-al" text="🚗   Xe cộ" />
+            <Region prefHeight="386.0" prefWidth="211.0" />
+            <HBox prefHeight="100.0" prefWidth="200.0" spacing="10.0" styleClass="user-chip-al">
+               <children>
+                  <Label fx:id="userAvatarLabel" prefHeight="15.0" prefWidth="58.0" styleClass="user-avatar-al" text="NV" />
+                  <VBox prefHeight="96.0" prefWidth="178.0">
+                     <children>
+                        <Label fx:id="userNameLabel" prefHeight="15.0" prefWidth="143.0" styleClass="user-name-al" text="Người dùng" />
+                        <Label fx:id="userRoleLabel" prefHeight="14.0" prefWidth="142.0" styleClass="user-role-al" text="Bider" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+      <VBox prefHeight="846.0" prefWidth="890.0">
+         <children>
+            <HBox prefHeight="39.0" prefWidth="850.0" spacing="14.0" styleClass="topbar-al">
+               <children>
+                  <Label prefHeight="22.0" prefWidth="312.0" styleClass="topbar-title-al" text="Khám phá đấu giá">
+                     <font>
+                        <Font name="Segoe UI" size="12.0" />
+                     </font></Label>
+                  <Region prefHeight="25.0" prefWidth="234.0" />
+                  <Label prefHeight="25.0" prefWidth="44.0" styleClass="search-icon-al" text="🔍" />
+                  <TextField fx:id="searchField" prefHeight="25.0" prefWidth="180.0" promptText="Tìm sản phẩm,danh mục..." styleClass="search-input-al" />
+                  <ComboBox fx:id="sortCombo" prefHeight="26.0" prefWidth="146.0" styleClass="sort-combo-al" />
+               </children>
+            </HBox>
+            <HBox prefHeight="84.0" prefWidth="850.0" styleClass="stats-banner-al">
+               <children>
+                  <VBox alignment="CENTER" prefHeight="100.0" prefWidth="217.0">
+                     <children>
+                        <Label fx:id="statLive" text="0">
+                           <styleClass>
+                              <String fx:value="stat-val-al" />
+                              <String fx:value="stat-green-al" />
+                           </styleClass>
+                        </Label>
+                        <Label styleClass="stat-lbl-al" text="Đang diễn ra" />
+                     </children>
+                  </VBox>
+                  <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="100.0" stroke="BLACK" strokeType="INSIDE" styleClass="stat-sep-al" width="1.0" />
+                  <VBox alignment="CENTER" prefHeight="100.0" prefWidth="213.0" styleClass="stat-cell-al">
+                     <children>
+                        <Label fx:id="statSoon" text="0">
+                           <styleClass>
+                              <String fx:value="stat-val-al" />
+                              <String fx:value="stat-amber-al" />
+                           </styleClass>
+                        </Label>
+                        <Label styleClass="stat-lbl-al" text="Sắp bất đầu" />
+                     </children>
+                  </VBox>
+                  <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="100.0" stroke="BLACK" strokeType="INSIDE" styleClass="stat-sep-al" width="1.0" />
+                  <VBox alignment="CENTER" prefHeight="100.0" prefWidth="206.0" styleClass="stat-cell-al">
+                     <children>
+                        <Label fx:id="statTotal" text="0">
+                           <styleClass>
+                              <String fx:value="stat-val-al" />
+                              <String fx:value="stat-dim-al" />
+                           </styleClass>
+                        </Label>
+                        <Label styleClass="stat-lbl-al" text="Tổng phiên" />
+                     </children>
+                  </VBox>
+                  <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="100.0" stroke="BLACK" strokeType="INSIDE" styleClass="stat-sep-al" width="1.0" />
+                  <VBox alignment="CENTER" prefHeight="100.0" prefWidth="220.0" styleClass="stat-cell-al">
+                     <children>
+                        <Label text="0">
+                           <styleClass>
+                              <String fx:value="stat-val-al" />
+                              <String fx:value="stat-red-al" />
+                           </styleClass>
+                        </Label>
+                        <Label fx:id="statBids" styleClass="stat-lbl-al" text="Tổng lượt Bid" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+            <ScrollPane fx:id="mainScroll" prefHeight="712.0" prefWidth="850.0" styleClass="scroll-al">
+               <content>
+                  <VBox prefHeight="446.0" prefWidth="890.0" spacing="10.0">
+                     <children>
+                        <HBox prefHeight="39.0" prefWidth="802.0" spacing="10.0" styleClass="ticker-al">
+                           <children>
+                              <Label prefHeight="38.0" prefWidth="28.0" styleClass="ticker-dot-al" text="●" />
+                              <Label fx:id="tickerLabel" prefHeight="39.0" prefWidth="83.0" styleClass="ticker-txt-al" text="Đang tải..." />
+                           </children>
+                        </HBox>
+                        <HBox fx:id="filterBar" prefHeight="40.0" prefWidth="856.0" spacing="15.0">
+                           <children>
+                              <Label prefHeight="71.0" prefWidth="59.0" styleClass="filter-lbl-al" text="Lọc:" />
+                              <Button mnemonicParsing="false" onAction="#filterAll" prefHeight="24.0" prefWidth="83.0" text="Tất cả">
+                                 <styleClass>
+                                    <String fx:value="chip-al" />
+                                    <String fx:value="chip-on-al" />
+                                 </styleClass>
+                              </Button>
+                              <Button mnemonicParsing="false" onAction="#filterLive" prefHeight="40.0" prefWidth="118.0" styleClass="chip-al" text="🔴  Đang live" />
+                              <Button mnemonicParsing="false" onAction="#filterEnded" prefHeight="40.0" prefWidth="110.0" styleClass="chip-al" text="⚫  Kết thúc" />
+                              <Button mnemonicParsing="false" onAction="#filterElectronics" prefHeight="40.0" prefWidth="115.0" styleClass="chip-al" text="Điện tử" />
+                              <Button mnemonicParsing="false" onAction="#filterArt" prefHeight="24.0" prefWidth="110.0" styleClass="chip-al" text="Nghệ thuật" />
+                              <Button mnemonicParsing="false" onAction="#filterVehicle" prefHeight="24.0" prefWidth="105.0" styleClass="chip-al" text="Xe cộ" />
+                           </children>
+                        </HBox>
+                        <HBox prefHeight="68.0" prefWidth="856.0" spacing="10.0">
+                           <children>
+                              <Label styleClass="sec-title-al" text="Phiên đang diễn ra" />
+                              <Label fx:id="liveCountLabel" styleClass="sec-count-al" text="0 phiên" />
+                           </children>
+                        </HBox>
+                        <TitledPane fx:id="auctionGrid" animated="false" prefHeight="189.0" prefWidth="856.0" styleClass="tile-al" text="untitled">
+                           <content>
+                              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="50.0" prefWidth="854.0" />
+                           </content>
+                        </TitledPane>
+                        <HBox prefHeight="68.0" prefWidth="856.0">
+                           <children>
+                              <Label styleClass="sec-title-al" text="Sắp bắt đầu" />
+                           </children>
+                        </HBox>
+                        <VBox fx:id="upcomingBox" prefHeight="86.0" prefWidth="856.0" styleClass="topbar-title-al" />
+                     </children>
+                     <padding>
+                        <Insets bottom="24.0" left="10.0" right="24.0" top="18.0" />
+                     </padding>
+                  </VBox>
+               </content>
+            </ScrollPane>
+         </children>
+      </VBox>
+   </children>
+</HBox>

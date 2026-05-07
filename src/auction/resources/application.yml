@@ -1,0 +1,101 @@
+# ✅ Spring Boot Configuration for LTNC Auction System
+
+spring:
+  application:
+    name: LTNC-Auction-System
+    version: 1.0.0
+
+  # ===== DATABASE CONFIGURATION =====
+  datasource:
+    url: jdbc:mysql://localhost:3306/ltnc_auction?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+    username: root
+    password: 12345
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # ===== JPA/HIBERNATE CONFIGURATION =====
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  # ===== FLYWAY CONFIGURATION =====
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    enabled: true
+
+  # ===== SERVER CONFIGURATION =====
+  server:
+    port: 8080
+    servlet:
+      context-path: /
+    compression:
+      enabled: true
+      min-response-size: 1024
+
+  # ===== MVC CONFIGURATION =====
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
+  # ===== JACKSON CONFIGURATION =====
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+# ===== LOGGING CONFIGURATION =====
+logging:
+  level:
+    root: INFO
+    com.ltnc: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/ltnc-auction.log
+    max-size: 10MB
+    max-history: 30
+
+# ===== CUSTOM CONFIGURATION =====
+auction:
+  system:
+    name: LTNC Auction System
+    version: 1.0.0
+    auto-bid:
+      max-extensions: 3
+      thread-pool-size: 10
+    anti-sniping:
+      window-seconds: 60
+      extension-seconds: 300
+      max-extensions: 3
+    websocket:
+      enabled: true
+      max-connections: 1000

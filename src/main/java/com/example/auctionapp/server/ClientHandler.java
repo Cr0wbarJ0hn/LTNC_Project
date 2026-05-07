@@ -15,9 +15,10 @@ import com.google.gson.JsonParser;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
-    private BufferedReader in;  // The "Ears"
-    private PrintWriter out;    // The "Mouth"
-    private String username;    // To remember who this specific user is
+    private BufferedReader in;
+    private PrintWriter out;
+    private String username;
+    private Gson gson = new Gson(); // Keep one instance for the whole class
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -28,128 +29,115 @@ public class ClientHandler implements Runnable {
         try {
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new PrintWriter(clientSocket.getOutputStream(), true);
-            Gson gson = new Gson(); // 🛠️ Create our JSON tool
 
             String clientMessage;
             while ((clientMessage = in.readLine()) != null) {
-                System.out.println("SERVER LOG: Received from client: " + clientMessage);
+                System.out.println("SERVER LOG: Received: " + clientMessage);
 
-                // 1. Read the JSON Message instead of splitting by ":"
                 JsonObject request = JsonParser.parseString(clientMessage).getAsJsonObject();
                 String command = request.get("action").getAsString();
 
+                // The switch now just "dispatches" to the right method
                 switch (command) {
-                    case "LOGIN":
-                        String loginUser = request.get("username").getAsString();
-                        String loginPass = request.get("password").getAsString();
-
-                        if (DatabaseManager.verifyLogin(loginUser, loginPass)) {
-                            this.username = loginUser;
-                            // Send JSON Response
-                            sendMessage(gson.toJson(new NetworkMessage("LOGIN_SUCCESS", "Welcome back!", true)));
-                        } else {
-                            sendMessage(gson.toJson(new NetworkMessage("LOGIN_ERROR", "Incorrect username or password.", false)));
-                        }
-                        break;
-
-                    case "REGISTER":
-                        String newUsername = request.get("username").getAsString();
-                        String newPassword = request.get("password").getAsString();
-                        String newEmail = request.get("email").getAsString();
-
-                        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
-                        if (!newEmail.matches(emailRegex)) {
-                            sendMessage(gson.toJson(new NetworkMessage("REGISTER_ERROR", "Invalid email format.", false)));
-                            break;
-                        }
-
-                        try {
-                            DatabaseManager.registerUser(newUsername, newPassword, newEmail);
-                            sendMessage(gson.toJson(new NetworkMessage("REGISTER_SUCCESS", "Welcome!", true)));
-                        } catch (Exception e) {
-                            String realError = e.getMessage().toLowerCase();
-                            if (realError.contains("email")) {
-                                sendMessage(gson.toJson(new NetworkMessage("REGISTER_ERROR", "Email already taken.", false)));
-                            } else if (realError.contains("username") || realError.contains("primary")) {
-                                sendMessage(gson.toJson(new NetworkMessage("REGISTER_ERROR", "Username already taken.", false)));
-                            } else {
-                                sendMessage(gson.toJson(new NetworkMessage("REGISTER_ERROR", "Registration failed.", false)));
-                            }
-                        }
-                        break;
-
-                    case "SUBMIT_AUCTION":
-                        try {
-                            // Look how clean this is now! No more parts[0], parts[1] guess-work.
-                            String itemName = request.get("itemName").getAsString();
-                            String itemType = request.get("itemType").getAsString();
-                            String itemCondition = request.get("itemCondition").getAsString();
-                            String description = request.get("description").getAsString();
-                            String imagePath = request.get("imagePath").getAsString(); // No more [DRIVE] replace hack!
-                            String seller = request.get("seller").getAsString();
-
-                            double price = request.get("price").getAsDouble();
-                            double increment = request.get("increment").getAsDouble();
-                            long receivedTime = request.get("endTime").getAsLong();
-                            java.sql.Timestamp endTime = new java.sql.Timestamp(receivedTime);
-
-                            Items newItem = new Items(0, itemType, itemName, itemCondition, description, imagePath);
-                            DatabaseManager.insertItemAndAuction(newItem, seller, price, increment, endTime);
-
-                            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_SUCCESS", "Auction posted successfully!", true)));
-
-                        } catch (Exception e) {
-                            System.out.println("DEBUG: Server Error -> " + e.getMessage());
-                            e.printStackTrace();
-                            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_ERROR", "Internal server error.", false)));
-                        }
-                        break;
-
-                    case "BID":
-                        // 🛡️ PROJECT REQUIREMENT: CONCURRENCY / SYNCHRONIZATION 🛡️
-                        // We lock the DatabaseManager so only ONE thread can place a bid at a single time!
-                        synchronized (DatabaseManager.class) {
-                            // TODO: Handle actual database bidding logic here
-                            sendMessage(gson.toJson(new NetworkMessage("SYSTEM", "We received your bid safely!", true)));
-                        }
-                        break ;
-
-                    case "GET_CATEGORY":
-                        String requestedCategory = request.get("data").getAsString();
-                        String auctionData = DatabaseManager.fetchAuctionsByCategory(requestedCategory);
-
-                        if (auctionData == null || auctionData.isEmpty()) {
-                            sendMessage(gson.toJson(new NetworkMessage("CATEGORY_RESPONSE", "NO_ITEMS", true)));
-                        } else {
-                            sendMessage(gson.toJson(new NetworkMessage("CATEGORY_RESPONSE", auctionData, true)));
-                        }
-                        break;
-
-                    default:
-                        sendMessage(gson.toJson(new NetworkMessage("ERROR", "Command not recognized.", false)));
+                    case "LOGIN" -> handleLogin(request);
+                    case "REGISTER" -> handleRegister(request);
+                    case "SUBMIT_AUCTION" -> handleSubmitAuction(request);
+                    case "BID" -> handleBid(request);
+                    case "GET_CATEGORY" -> handleGetCategory(request);
+                    default -> sendMessage(gson.toJson(new NetworkMessage("ERROR", "Unknown command", false)));
                 }
             }
-        } catch (IOException e) {
-            System.out.println("A user disconnected abruptly.");
         } catch (Exception e) {
-            System.out.println("CRITICAL SERVER CRASH: An unexpected error occurred!");
-            e.printStackTrace();
+            System.out.println("User connection lost or error occurred.");
         } finally {
-            try {
-                AuctionServer.activeClients.remove(this);
-                if (clientSocket != null) clientSocket.close();
-                System.out.println("Connection closed.");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            closeConnection();
         }
     }
 
-    // This is the method the Server calls to talk BACK to the user
-    public void sendMessage(String message) {
-        if (out != null) {
-            out.println(message);
+
+    private void handleLogin(JsonObject request) {
+        String loginUser = request.get("username").getAsString();
+        String loginPass = request.get("password").getAsString();
+
+        if (DatabaseManager.verifyLogin(loginUser, loginPass)) {
+            this.username = loginUser;
+            sendMessage(gson.toJson(new NetworkMessage("LOGIN_SUCCESS", "Welcome back!", true)));
+        } else {
+            sendMessage(gson.toJson(new NetworkMessage("LOGIN_ERROR", "Incorrect credentials.", false)));
+        }
+    }
+
+    private void handleRegister(JsonObject request) {
+        String newUsername = request.get("username").getAsString();
+        String newPassword = request.get("password").getAsString();
+        String newEmail = request.get("email").getAsString();
+
+        if (!newEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")) {
+            sendMessage(gson.toJson(new NetworkMessage("REGISTER_ERROR", "Invalid email format.", false)));
+            return;
         }
 
+        try {
+            DatabaseManager.registerUser(newUsername, newPassword, newEmail);
+            sendMessage(gson.toJson(new NetworkMessage("REGISTER_SUCCESS", "Welcome!", true)));
+        } catch (Exception e) {
+            String msg = e.getMessage().toLowerCase().contains("email") ? "Email taken" : "Username taken";
+            sendMessage(gson.toJson(new NetworkMessage("REGISTER_ERROR", msg, false)));
+        }
+    }
+
+    private void handleSubmitAuction(JsonObject request) {
+        try {
+            Items newItem = new Items(
+                    0,
+                    request.get("itemType").getAsString(),
+                    request.get("itemName").getAsString(),
+                    request.get("itemCondition").getAsString(),
+                    request.get("description").getAsString(),
+                    request.get("imagePath").getAsString()
+            );
+
+            DatabaseManager.insertItemAndAuction(
+                    newItem,
+                    request.get("seller").getAsString(),
+                    request.get("price").getAsDouble(),
+                    request.get("increment").getAsDouble(),
+                    new java.sql.Timestamp(request.get("endTime").getAsLong())
+            );
+
+            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_SUCCESS", "Posted!", true)));
+        } catch (Exception e) {
+            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_ERROR", "Server error.", false)));
+        }
+    }
+
+    private void handleBid(JsonObject request) {
+        synchronized (DatabaseManager.class) {
+            // Logic for bidding goes here
+            sendMessage(gson.toJson(new NetworkMessage("SYSTEM", "Bid received!", true)));
+        }
+    }
+
+    private void handleGetCategory(JsonObject request) {
+        String cat = request.get("data").getAsString();
+        String data = DatabaseManager.fetchAuctionsByCategory(cat);
+
+        String response = (data == null || data.isEmpty()) ? "NO_ITEMS" : data;
+        sendMessage(gson.toJson(new NetworkMessage("CATEGORY_RESPONSE", response, true)));
+    }
+
+    // --- HELPERS ---
+
+    public void sendMessage(String message) {
+        if (out != null) out.println(message);
+    }
+
+    private void closeConnection() {
+        try {
+            AuctionServer.activeClients.remove(this);
+            if (clientSocket != null) clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

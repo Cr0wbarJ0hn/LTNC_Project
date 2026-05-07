@@ -1,4 +1,4 @@
-package com.example.auctionapp.model;
+ package com.example.auctionapp.model;
 
 public class Items {
     private String imagePath;

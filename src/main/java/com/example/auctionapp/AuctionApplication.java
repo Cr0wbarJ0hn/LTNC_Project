@@ -12,9 +12,7 @@ public class AuctionApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(AuctionApplication.class.getResource("hello-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 1300, 875);
-
-        // --- NEW: Add the Application Icon ---
+        Scene scene = new Scene(fxmlLoader.load(), 1300,800 );
         try {
             // We put "/app_icon.png" here. Make sure your image file is named exactly this
             // and is sitting in your src/main/resources folder!

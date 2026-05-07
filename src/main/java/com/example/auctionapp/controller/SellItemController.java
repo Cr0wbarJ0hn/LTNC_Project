@@ -14,6 +14,8 @@ import javafx.stage.FileChooser;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import javafx.application.Platform;
+import java.util.Base64;
+import java.nio.file.Files;
 
 
 import java.time.ZoneId;
@@ -124,6 +126,15 @@ public class SellItemController {
                         .toInstant()
                         .toEpochMilli();
 
+                // --- NEW CODE STARTS HERE ---
+                // Convert the image file to a Base64 String before sending
+                String imageString = "";
+                if (selectedImageFile != null) {
+                    byte[] fileContent = Files.readAllBytes(selectedImageFile.toPath());
+                    imageString = Base64.getEncoder().encodeToString(fileContent);
+                }
+                // --- NEW CODE ENDS HERE ---
+
                 // 4. CREATE JSON DATA (Clean & Professional)
                 Gson gson = new Gson();
                 JsonObject auctionReq = new JsonObject();
@@ -132,7 +143,11 @@ public class SellItemController {
                 auctionReq.addProperty("itemType", category);
                 auctionReq.addProperty("itemCondition", condition);
                 auctionReq.addProperty("description", itemDescription);
-                auctionReq.addProperty("imagePath", selectedImageFile.getAbsolutePath()); // Colons are safe now!
+
+                // --- CHANGED THIS LINE ---
+                // We now send the giant Base64 string instead of the local computer path
+                auctionReq.addProperty("imagePath", imageString);
+
                 auctionReq.addProperty("seller", UserSession.getUsername());
                 auctionReq.addProperty("price", initialPrice);
                 auctionReq.addProperty("increment", priceIncrement);

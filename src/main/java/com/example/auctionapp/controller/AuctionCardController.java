@@ -10,6 +10,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import javafx.scene.shape.Rectangle;
+import java.util.Base64;
+import java.io.ByteArrayInputStream;
+import javafx.scene.image.Image;
 
 public class AuctionCardController {
 
@@ -37,13 +40,11 @@ public class AuctionCardController {
 
     private DashboardController dashboardController;
 
-    // 3. The Dashboard hands its reference to this card using this method
+
     public void setDashboardController(DashboardController dashboardController) {
         this.dashboardController = dashboardController;
     }
 
-    // 4. Setting up the card's look and saving the data
-    // --- NEW: Updated this signature to accept all the new data! ---
     public void setCardData(String name, double startingBid, double currentBid, String condition, String description, String imagePath, String seller, long endTimeMillis, double Increment) {
 
         // Save ALL the data for later!
@@ -52,7 +53,7 @@ public class AuctionCardController {
         this.savedCurrentBid = currentBid;
         this.savedCondition = condition;
         this.savedDescription = description;
-        this.savedImagePath = imagePath;
+        this.savedImagePath = imagePath; // This now holds the Base64 string
         this.savedEndTimeMillis = endTimeMillis;
         this.savedSeller = seller;
         this.savedIncrement = Increment;
@@ -60,8 +61,6 @@ public class AuctionCardController {
         // Set the visible text on the card itself
         nameLabel.setText(name);
         Seller.setText("Seller: " + seller);
-
-        // Formats the current bid to look like money on the card (e.g., $12500.00)
         priceLabel.setText("$" + String.format("%.2f", currentBid));
 
         String cleanCondition = condition.toUpperCase().trim();
@@ -84,13 +83,27 @@ public class AuctionCardController {
                 break;
         }
 
-        // Safely load the image
-        try {
-            String formattedUrl = new java.io.File(imagePath).toURI().toString();
-            Image image = new Image(formattedUrl);
-            itemImageView.setImage(image);
-        } catch (Exception e) {
-            System.out.println("Card Image Error: Could not load image -> " + imagePath);
+        // --- FIXED IMAGE LOADING LOGIC ---
+        if (imagePath != null && !imagePath.isEmpty()) {
+            // Safely load the image
+            try {
+                if (imagePath != null && !imagePath.isEmpty()) {
+                    // 1. If it starts with /9j/ or is very long, it's Base64
+                    if (imagePath.length() > 200) {
+                        byte[] decodedBytes = Base64.getDecoder().decode(imagePath);
+                        Image image = new Image(new ByteArrayInputStream(decodedBytes));
+                        itemImageView.setImage(image);
+                    } else {
+                        // 2. Fallback for old file paths (like during testing)
+                        String formattedUrl = new java.io.File(imagePath).toURI().toString();
+                        Image image = new Image(formattedUrl);
+                        itemImageView.setImage(image);
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Card Image Error: Could not load image data.");
+                // e.printStackTrace(); // Uncomment this if it still doesn't work to see the error
+            }
         }
     }
     @FXML

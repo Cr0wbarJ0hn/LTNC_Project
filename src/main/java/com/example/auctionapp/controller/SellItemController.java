@@ -165,7 +165,7 @@ public class SellItemController {
                     String responseStr = in.readLine();
                     NetworkMessage response = gson.fromJson(responseStr, NetworkMessage.class);
 
-                    // 6. UPDATE UI (Must jump back to UI thread)
+
                     Platform.runLater(() -> {
                         if (response.success) {
                             ErrorTextField3.setText("Successfully created your auction!");

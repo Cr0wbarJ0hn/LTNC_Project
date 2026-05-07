@@ -14,6 +14,7 @@
 <?import javafx.scene.shape.Line?>
 <?import javafx.scene.text.Font?>
 
+
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="875.0" prefWidth="1265.0" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.LoginController">
    <children>
       <HBox layoutX="-23.0" layoutY="-28.0" prefHeight="1084.0" prefWidth="1460.0" styleClass="prism-background" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -25,7 +26,8 @@
                         <Image url="@b620391d-e184-44d4-aabe-dfdb8d025a32%20(1).jpg" />
                      </image>
                   </ImageView>
-               </children></Pane>
+               </children>
+            </Pane>
             <Pane maxHeight="1.7976931348623157E308" prefHeight="916.0" prefWidth="648.0" style="-fx-background-color: #FFFFFF;" styleClass="prism-background" HBox.hgrow="ALWAYS">
                <children>
                   <TextField fx:id="usernameField" layoutX="172.0" layoutY="368.0" prefHeight="42.0" prefWidth="282.0" promptText="Username" styleClass="modern-input" />
@@ -33,7 +35,8 @@
                   <Button layoutX="246.0" layoutY="546.0" mnemonicParsing="false" onAction="#handleSignIn" prefHeight="40.0" prefWidth="118.0" styleClass="modern-button" text="Sign in">
                      <font>
                         <Font size="13.0" />
-                     </font></Button>
+                     </font>
+                  </Button>
                   <Line endX="97.0" endY="61.0" layoutX="164.0" layoutY="563.0" startX="-112.0" startY="61.0" />
                   <Line endX="79.0" endY="61.0" layoutX="468.0" layoutY="572.0" startX="-132.0" startY="61.0" />
                   <Label alignment="CENTER" layoutX="292.0" layoutY="624.0" prefHeight="17.0" prefWidth="25.0" text="OR" />

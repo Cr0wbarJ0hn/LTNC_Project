@@ -86,7 +86,7 @@ public class LoginController {
                             Parent root = loader.load();
 
                             // Use the stage we captured earlier!
-                            Scene scene = new Scene(root, 1900, 1200);
+                            Scene scene = new Scene(root, 1870, 1200);
                             stage.setScene(scene);
                             stage.setTitle("UET Auction House - Dashboard");
                             stage.centerOnScreen();

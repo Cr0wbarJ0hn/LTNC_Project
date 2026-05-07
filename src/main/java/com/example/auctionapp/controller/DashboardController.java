@@ -1,9 +1,11 @@
 package com.example.auctionapp.controller;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle; // Make sure to import this!
 import javafx.scene.layout.VBox;
@@ -11,6 +13,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.transform.Scale;
 
 
 import javafx.scene.Parent;
@@ -18,8 +21,10 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.Node;
-import java.io.IOException;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Base64;
 
 
 public class DashboardController {
@@ -35,6 +40,8 @@ public class DashboardController {
     @FXML private VBox emptyStatePane;
     @FXML private VBox itemDetailsPane;
     @FXML private StackPane centerContentArea;
+    @FXML private BorderPane mainContent; // The fx:id you set in Scene Builder
+    @FXML private StackPane rootPane;
 
 
     @FXML private Label conditionLabel;
@@ -205,6 +212,13 @@ public class DashboardController {
     @FXML
     public void initialize() {
 
+        Platform.runLater(() -> {
+            Scene scene = mainContent.getScene();
+            if (scene != null) {
+                applyScaling(scene);
+            }
+        });
+
         emptyStatePane.setVisible(true);
         itemDetailsPane.setVisible(false);
 
@@ -230,6 +244,41 @@ public class DashboardController {
         // 4. Apply the cut!
         previewImage.setClip(clip);
     }
+
+    private void applyScaling(Scene scene) {
+        // These are your "Design Resolution" numbers from Scene Builder
+        final double targetWidth = 1900.0;
+        final double targetHeight = 1200.0;
+
+        // Create the Scale object
+        Scale scale = new Scale(1, 1, 0, 0);
+
+        // Set the pivot point to the center so it scales inward
+        mainContent.getTransforms().add(scale);
+
+        // Listen for window resizing
+        scene.widthProperty().addListener((obs, oldVal, newVal) -> {
+            double widthRatio = newVal.doubleValue() / targetWidth;
+            double heightRatio = scene.getHeight() / targetHeight;
+
+            // Choose the smaller ratio to ensure the whole app fits on the screen
+            double bestRatio = Math.min(widthRatio, heightRatio);
+
+            scale.setX(bestRatio);
+            scale.setY(bestRatio);
+        });
+
+        scene.heightProperty().addListener((obs, oldVal, newVal) -> {
+            double widthRatio = scene.getWidth() / targetWidth;
+            double heightRatio = newVal.doubleValue() / targetHeight;
+
+            double bestRatio = Math.min(widthRatio, heightRatio);
+
+            scale.setX(bestRatio);
+            scale.setY(bestRatio);
+        });
+    }
+
     public void showItemPreview(String title, String description, String imagePath, long endTimeMillis,
                                 String seller, double startingBid, double currentBid, String condition, double increment) {
 
@@ -257,13 +306,24 @@ public class DashboardController {
         currentBidLabel.setText("$" + String.format("%.2f", currentBid));
 
         // 5. Safely load the image
+        // Safely load the image
         try {
-            String formattedUrl = new java.io.File(imagePath).toURI().toString();
-            Image newImage = new Image(formattedUrl);
-            previewImage.setImage(newImage);
-
+            if (imagePath != null && !imagePath.isEmpty()) {
+                // 1. If it starts with /9j/ or is very long, it's Base64
+                if (imagePath.length() > 200) {
+                    byte[] decodedBytes = Base64.getDecoder().decode(imagePath);
+                    Image image = new Image(new ByteArrayInputStream(decodedBytes));
+                    previewImage.setImage(image);
+                } else {
+                    // 2. Fallback for old file paths (like during testing)
+                    String formattedUrl = new java.io.File(imagePath).toURI().toString();
+                    Image image = new Image(formattedUrl);
+                    previewImage.setImage(image);
+                }
+            }
         } catch (Exception e) {
-            System.out.println("Preview Panel Error: Could not load image from path -> " + imagePath);
+            System.out.println("Card Image Error: Could not load image data.");
+            // e.printStackTrace(); // Uncomment this if it still doesn't work to see the error
         }
     }
     private String calculateTimeLeft(long endTimeMillis) {

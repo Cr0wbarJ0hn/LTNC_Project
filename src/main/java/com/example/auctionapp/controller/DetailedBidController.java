@@ -13,6 +13,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 
+import java.io.ByteArrayInputStream;
+import java.util.Base64;
+
 public class DetailedBidController {
 
     // --- FXML IDs from your Scene Builder ---
@@ -54,14 +57,24 @@ public class DetailedBidController {
 
 
         // 2. Load the image safely
+        // Safely load the image
         try {
             if (imagePath != null && !imagePath.isEmpty()) {
-                String formattedUrl = new java.io.File(imagePath).toURI().toString();
-                javafx.scene.image.Image newImage = new javafx.scene.image.Image(formattedUrl);
-                DetailImage.setImage(newImage); // Assuming your ImageView is named itemImageView
+                // 1. If it starts with /9j/ or is very long, it's Base64
+                if (imagePath.length() > 200) {
+                    byte[] decodedBytes = Base64.getDecoder().decode(imagePath);
+                    Image image = new Image(new ByteArrayInputStream(decodedBytes));
+                    DetailImage.setImage(image);
+                } else {
+                    // 2. Fallback for old file paths (like during testing)
+                    String formattedUrl = new java.io.File(imagePath).toURI().toString();
+                    Image image = new Image(formattedUrl);
+                    DetailImage.setImage(image);
+                }
             }
         } catch (Exception e) {
-            System.out.println("Detailed Screen Error: Could not load image -> " + imagePath);
+            System.out.println("Card Image Error: Could not load image data.");
+            // e.printStackTrace(); // Uncomment this if it still doesn't work to see the error
         }
 
 

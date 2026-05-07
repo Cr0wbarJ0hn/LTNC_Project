@@ -10,7 +10,7 @@ public class Seller extends User{
     private List<String> itemIDs;
     private boolean isVerified;
 
-    public Seller(String email, String userName, String passWordHash, String storeName){
+    public Seller(String userName, String email, String passWordHash, String storeName){
         super(email, userName, passWordHash, "Seller");
         this.storeName = storeName;
         this.rating = rating;

@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Bidder extends User {
-    private static final long serialVersionID = 1L;
+    private static final long serialVersionUID = 1L;
 
     private double walletBalance;
     private List<String> wonAuctionIds;
     private List<String> activeBidsID;
 
-    public Bidder(String email, String userName, String passWordHash) {
+    public Bidder(String userName, String email, String passWordHash) {
         super(email, userName, passWordHash, "Bidder");
         this.walletBalance = 0.0;
         this.wonAuctionIds = new ArrayList<>();
@@ -25,8 +25,8 @@ public class Bidder extends User {
         this.walletBalance = walletBalance;
     }
 
-    public double addFunds(double amount) {
-        return walletBalance += amount;
+    public void addFunds(double amount) {
+        walletBalance += amount;
     }
 
     public boolean deductFunds(double amount) {

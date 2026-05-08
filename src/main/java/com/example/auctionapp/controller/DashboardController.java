@@ -212,12 +212,18 @@ public class DashboardController {
     @FXML
     public void initialize() {
 
+
+
         Platform.runLater(() -> {
             Scene scene = mainContent.getScene();
             if (scene != null) {
                 applyScaling(scene);
+                // Trigger the scale calculation once manually at the start
+                forceInitialScale(scene);
             }
         });
+
+
 
         emptyStatePane.setVisible(true);
         itemDetailsPane.setVisible(false);
@@ -277,6 +283,20 @@ public class DashboardController {
             scale.setX(bestRatio);
             scale.setY(bestRatio);
         });
+    }
+
+    private void forceInitialScale(Scene scene) {
+        // Manually trigger the math once so it doesn't wait for a resize event
+        double widthRatio = scene.getWidth() / 1900.0;
+        double heightRatio = scene.getHeight() / 1200.0;
+        double bestRatio = Math.min(widthRatio, heightRatio);
+
+        for (javafx.scene.transform.Transform t : mainContent.getTransforms()) {
+            if (t instanceof javafx.scene.transform.Scale) {
+                ((javafx.scene.transform.Scale) t).setX(bestRatio);
+                ((javafx.scene.transform.Scale) t).setY(bestRatio);
+            }
+        }
     }
 
     public void showItemPreview(String title, String description, String imagePath, long endTimeMillis,

@@ -81,19 +81,25 @@ public class LoginController {
                         messageLabel.setText("Login Successful! Loading auction...");
                         messageLabel.setStyle("-fx-text-fill: green;");
 
+                        // Inside handleSignIn -> Platform.runLater -> if (response.success)
                         try {
                             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/Dashboard.fxml"));
                             Parent root = loader.load();
 
-                            // Use the stage we captured earlier!
-                            Scene scene = new Scene(root, 1870, 1200);
+                            // Create the scene WITHOUT fixed dimensions (don't force 1870x1200)
+                            Scene scene = new Scene(root);
+
+                            // Set the dark background so you don't see white borders
+                            scene.setFill(javafx.scene.paint.Color.valueOf("#13131B"));
+
                             stage.setScene(scene);
                             stage.setTitle("UET Auction House - Dashboard");
-                            stage.centerOnScreen();
+
+                            // THIS IS THE KEY: Force it to maximize immediately
+                            stage.setMaximized(true);
                             stage.show();
 
                         } catch (IOException e) {
-                            System.out.println("Crash! Could not find Dashboard.fxml");
                             e.printStackTrace();
                         }
                     } else {

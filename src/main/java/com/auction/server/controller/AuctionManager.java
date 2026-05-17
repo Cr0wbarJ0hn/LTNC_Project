@@ -31,8 +31,7 @@ public class AuctionManager {
         synchronized (lock) {
             autoBidConfigs.computeIfAbsent(config.getAuctionId(), k -> new PriorityQueue<>(
                     // Sắp xếp giảm dần theo maxBid
-                    Comparator.comparing(AutoBidConfig::getMaxBid).reversed()
-            )).add(config);
+                    Comparator.comparing(AutoBidConfig::getMaxBid).reversed())).add(config);
         }
         System.out.println("Server: Cấu hình Đặt giá tự động cho người dùng đã được nhận. " + config.getUserId());
     }
@@ -51,48 +50,52 @@ public class AuctionManager {
      * Hàm này chạy bên trong block synchronized(lock) nên không sợ tranh chấp dữ liệu
      */
     private void handleAutoBidding(Auction auction) {
+        // 1. Lấy ra hàng đợi Robot của phòng đấu giá hiện tại
         PriorityQueue<AutoBidConfig> queue = autoBidConfigs.get(auction.getId());
-        if (queue == null || queue.isEmpty()) return;
+        if (queue == null || queue.isEmpty()) return; // Nếu không có robot nào thì dừng lại luôn
 
         boolean robotActed;
         do {
-            robotActed = false;
+            robotActed = false; // Mặc định coi như vòng này chưa có robot nào nâng giá
+
+            // 2. Tạo một danh sách tạm thời để chứa các robot chưa đủ điều kiện ở vòng này
             List<AutoBidConfig> temporarilyRemoved = new ArrayList<>();
             AutoBidConfig bestRobot = null;
 
-            // Duyệt PriorityQueue để tìm robot tối ưu nhất
+            // 3. Vòng lặp duyệt từ đỉnh Queue xuống (đỉnh luôn là thằng có maxBid cao nhất)
             while (!queue.isEmpty()) {
-                AutoBidConfig top = queue.peek();
+                AutoBidConfig top = queue.peek(); // peek(): Xem thử thằng đứng đầu hàng đợi (không lấy ra)
 
-                // Điều kiện 1: Không tự đấu với chính mình
+                // Điều kiện 1: Robot không tự đấu với chính mình (nếu nó đang là người thắng hiện tại)
                 if (top.getUserId().equals(auction.getCurrentWinner())) {
-                    temporarilyRemoved.add(queue.poll());
-                    continue;
+                    temporarilyRemoved.add(queue.poll()); // poll(): Bốc nó ra khỏi queue tạm thời, tí trả lại sau
+                    continue; // Nhảy sang kiểm tra thằng tiếp theo trong hàng đợi
                 }
 
-                // Điều kiện 2: Giá mới không vượt quá giá trần (maxBid)
+                // Điều kiện 2: Giá mới (Giá hiện tại + Bước giá) không vượt quá giá trần (maxBid) của robot
                 if ((auction.getCurrentPrice() + top.getIncrement()) <= top.getMaxBid()) {
-                    bestRobot = top;
-                    break;
+                    bestRobot = top; // Tìm thấy ông lớn nhất thỏa mãn rồi!
+                    break; // Thoát xích, không cần xét các robot phía sau nữa
                 } else {
                     // Robot không đủ tiền nâng mức giá tiếp theo -> Loại vĩnh viễn khỏi hàng đợi
                     queue.poll();
                 }
             }
 
-            // Hoàn lại các robot hợp lệ nhưng tạm thời bị bỏ qua (do đang là người thắng) vào lại Queue
+            // 4. Hoàn lại các robot tạm thời bị bỏ qua (đang giữ top 1) vào lại Queue cho các vòng sau
             if (!temporarilyRemoved.isEmpty()) {
                 queue.addAll(temporarilyRemoved);
             }
 
+            // 5. Nếu tìm thấy Robot tối ưu nhất, tiến hành nâng giá
             if (bestRobot != null) {
-                double newPrice = auction.getCurrentPrice() + bestRobot.getIncrement();
-                updateWinner(auction, bestRobot.getUserId(), newPrice);
+                double newPrice = auction.getCurrentPrice() + bestRobot.getIncrement(); // Tính giá mới
+                updateWinner(auction, bestRobot.getUserId(), newPrice); // Cập nhật người thắng mới lên màn hình
                 System.out.println("Robot [" + bestRobot.getUserId() + "] dùng PriorityQueue đã nâng giá lên: " + newPrice);
-                robotActed = true;
+                robotActed = true; // Đánh dấu true để vòng do-while chạy tiếp, kiểm tra xem có robot khác "đè" tiếp không
             }
 
-        } while (robotActed);
+        } while (robotActed); // Vòng lặp dừng lại khi không còn ông Robot nào đủ tiền nâng giá nữa
     }
 
     /**

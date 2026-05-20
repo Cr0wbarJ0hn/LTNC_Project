@@ -155,9 +155,35 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleBid(JsonObject request) {
+        // 1. Thread safety lock to handle concurrency rules safely across concurrent bidders
         synchronized (DatabaseManager.class) {
-            // Logic for bidding goes here
-            sendMessage(gson.toJson(new NetworkMessage("SYSTEM", "Bid received!", true)));
+            try {
+                // 2. Extract the inner string data envelope and decode the parameters
+                String innerJsonData = request.get("data").getAsString();
+                JsonObject bidPayload = JsonParser.parseString(innerJsonData).getAsJsonObject();
+
+                int auctionId = bidPayload.get("auctionId").getAsInt();
+                double bidAmount = bidPayload.get("bidAmount").getAsDouble();
+
+                // Use session username if logged in; fallback to incoming parameter
+                String bidderName = (this.username != null) ? this.username : bidPayload.get("username").getAsString();
+
+                // 3. Process the bid via your database logic helper
+                String resultMessage = DatabaseManager.executeSafeBidTransaction(auctionId, bidderName, bidAmount);
+
+                if ("SUCCESS".equals(resultMessage)) {
+                    // Success! Return a happy message back down the socket stream
+                    sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Bid accepted successfully!", true)));
+                } else {
+                    // Business rule validation failed (e.g., bid was too low or auction closed)
+                    sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", resultMessage, false)));
+                }
+
+            } catch (Exception e) {
+                System.err.println("[SERVER ERROR] Exception thrown inside handleBid execution thread:");
+                e.printStackTrace();
+                sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Server processing error encountered.", false)));
+            }
         }
     }
 

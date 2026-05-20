@@ -2,6 +2,9 @@ package com.example.auctionapp.server;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import com.example.auctionapp.model.Items;
 import java.sql.*;
 import java.net.URI;
@@ -180,8 +183,9 @@ public class DatabaseManager {
                 "auctionId INT NOT NULL, " +
                 "bidder VARCHAR(50) NOT NULL, " +
                 "bidAmount DOUBLE PRECISION NOT NULL, " +
-                "FOREIGN KEY (auctionId) REFERENCES auctions(id))";
-
+                "bidTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " + // Tracks exactly when the bid arrived
+                "FOREIGN KEY (auctionId) REFERENCES auctions(id), " +
+                "FOREIGN KEY (bidder) REFERENCES members(username))"; // Prevents ghost bidders
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
@@ -197,9 +201,87 @@ public class DatabaseManager {
         }
     }
 
+    public static String executeSafeBidTransaction(int auctionId, String username, double proposedBid) {
+        // 🌟 SQL STRINGS UPDATED TO MATCH YOUR STANDARDIZED CAMELCASE COLUMNS
+        String query = "SELECT currentPrice, priceIncrement, endTime FROM auctions WHERE id = ?";
+        String update = "UPDATE auctions SET currentPrice = ? WHERE id = ?"; // Removed missing 'last_bidder' link
+
+        try (Connection conn = getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(query)) {
+
+            checkStmt.setInt(1, auctionId);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) {
+                    double currentPrice = rs.getDouble("currentPrice");
+                    double increment = rs.getDouble("priceIncrement");
+                    java.sql.Timestamp endTime = rs.getTimestamp("endTime");
+
+                    // Validation Rule A: Has the item timeline expired?
+                    if (endTime.getTime() < System.currentTimeMillis()) {
+                        return "This auction has already ended!";
+                    }
+
+                    // Validation Rule B: Is the bid higher than minimum increments?
+                    double minimumRequired = currentPrice + increment;
+                    if (proposedBid < minimumRequired) {
+                        return "Bid too low! Minimum required is $" + String.format("%.2f", minimumRequired);
+                    }
+
+                    // Validation passed -> Execute database mutation safely
+                    try (PreparedStatement updateStmt = conn.prepareStatement(update)) {
+                        updateStmt.setDouble(1, proposedBid);
+                        updateStmt.setInt(2, auctionId);
+
+                        int rowsAffected = updateStmt.executeUpdate();
+                        if (rowsAffected > 0) {
+
+                            // 🌟 OPTIONAL BONUS: Record tracking statistics into your explicit 'bids' historical ledger table!
+                            String logBidSql = "INSERT INTO bids (auctionId, bidder, bidAmount) VALUES (?, ?, ?)";
+                            try (PreparedStatement logStmt = conn.prepareStatement(logBidSql)) {
+                                logStmt.setInt(1, auctionId);
+                                logStmt.setString(2, username);
+                                logStmt.setDouble(3, proposedBid);
+                                logStmt.executeUpdate();
+                            }
+
+                            return "SUCCESS";
+                        }
+                    }
+                } else {
+                    return "Auction item target ID not found.";
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Database transaction failed.";
+        }
+        return "Unknown failure.";
+    }
+    public static boolean closeAuction(int auctionId) {
+        String updateSQL = "UPDATE auctions SET active = false WHERE id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(updateSQL)) {
+
+            stmt.setInt(1, auctionId);
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Database: Auction " + auctionId + " is now CLOSED.");
+                return true;
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to close auction in database!");
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static String fetchAuctionsByCategory(String category) {
         JsonArray jsonArray = new JsonArray();
-        String query = "SELECT i.itemName, a.startingPrice, a.currentPrice, i.itemCondition, " +
+
+        // 🌟 SQL STRINGS MANUALLY ADJUSTED TO MATCH YOUR INITIALIZETABLES SCHEMA EXACTLY
+        String query = "SELECT a.id, i.itemName, a.startingPrice, a.currentPrice, i.itemCondition, " +
                 "i.imagePath, i.description, a.seller, a.endTime, a.priceIncrement " +
                 "FROM items i " +
                 "JOIN auctions a ON i.id = a.itemId " +
@@ -213,6 +295,11 @@ public class DatabaseManager {
 
             while (rs.next()) {
                 JsonObject itemJson = new JsonObject();
+
+                // Extracted IDs mapped to UI expectations
+                itemJson.addProperty("id", rs.getInt("id"));
+
+                // 🌟 READ THE EXACT CASE TARGETED IN THE SQL SELECT QUERY STATEMENT ABOVE:
                 itemJson.addProperty("itemName", rs.getString("itemName"));
                 itemJson.addProperty("startingPrice", rs.getDouble("startingPrice"));
                 itemJson.addProperty("currentPrice", rs.getDouble("currentPrice"));
@@ -220,16 +307,23 @@ public class DatabaseManager {
                 itemJson.addProperty("imagePath", rs.getString("imagePath"));
                 itemJson.addProperty("description", rs.getString("description"));
                 itemJson.addProperty("seller", rs.getString("seller"));
-                itemJson.addProperty("endTime", rs.getTimestamp("endTime").getTime());
+
+                if (rs.getTimestamp("endTime") != null) {
+                    itemJson.addProperty("endTime", rs.getTimestamp("endTime").getTime());
+                } else {
+                    itemJson.addProperty("endTime", System.currentTimeMillis());
+                }
+
                 itemJson.addProperty("priceIncrement", rs.getDouble("priceIncrement"));
+
                 jsonArray.add(itemJson);
             }
         } catch (Exception e) {
+            System.err.println("[SERVER ERROR] Failed to fetch auctions by category:");
             e.printStackTrace();
         }
         return jsonArray.toString();
     }
-
     public static void insertItemAndAuction(Items item, String seller, double initialPrice, double priceIncrement, java.sql.Timestamp endTime) {
         String insertItemSql = "INSERT INTO items (itemName, itemType, itemCondition, description, imagePath) VALUES (?, ?, ?, ?, ?)";
         String insertAuctionSql = "INSERT INTO auctions (itemId, seller, startingPrice, currentPrice, priceIncrement, endTime, active) VALUES (?, ?, ?, ?, ?, ?, TRUE)";

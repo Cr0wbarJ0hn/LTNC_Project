@@ -54,6 +54,7 @@ public class DashboardController {
     // --- 2. The Elements Inside the Details Panel ---
     @FXML private ImageView previewImage;
     @FXML private Label previewTitle;
+    private int currentSelectedAuctionId;
     @FXML private Label previewDescription;
     @FXML private Button bidButton;
     @FXML private Button infoButton;
@@ -299,7 +300,7 @@ public class DashboardController {
         }
     }
 
-    public void showItemPreview(String title, String description, String imagePath, long endTimeMillis,
+    public void showItemPreview(int auctionId, String title, String description, String imagePath, long endTimeMillis,
                                 String seller, double startingBid, double currentBid, String condition, double increment) {
 
         // 1. Hide the empty state box and show the item details box
@@ -308,6 +309,7 @@ public class DashboardController {
 
         this.currentItemIncrement = increment;
         this.currentImagePath = imagePath;
+        this.currentSelectedAuctionId = auctionId;
 
         // 2. Inject the basic data into your right-panel labels
         previewTitle.setText(title);
@@ -397,7 +399,7 @@ public class DashboardController {
             String timeLeft = timeLeftLabel.getText();
 
             // Pass the data (we leave image path blank for a moment, or you can pass your saved URL)
-            controller.setItemData(name, desc, price, condition, seller, currentImagePath, String.valueOf(currentItemIncrement), timeLeft);
+            controller.setItemData(currentSelectedAuctionId, name, desc, price, condition, seller, currentImagePath, String.valueOf(currentItemIncrement), timeLeft);
             if (!centerContentArea.getChildren().isEmpty()) {
                 javafx.scene.Node currentView = centerContentArea.getChildren().get(0);
                 controller.setPreviousContent(currentView);

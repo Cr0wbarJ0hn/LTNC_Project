@@ -36,6 +36,7 @@ public class AuctionCardController {
     private double savedCurrentBid;
     private long savedEndTimeMillis;
     private double savedIncrement;
+    private int savedId;
 
 
     private DashboardController dashboardController;
@@ -45,9 +46,9 @@ public class AuctionCardController {
         this.dashboardController = dashboardController;
     }
 
-    public void setCardData(String name, double startingBid, double currentBid, String condition, String description, String imagePath, String seller, long endTimeMillis, double Increment) {
+    public void setCardData(int id, String name, double startingBid, double currentBid, String condition, String description, String imagePath, String seller, long endTimeMillis, double Increment) {
 
-        // Save ALL the data for later!
+        this.savedId = id;
         this.savedName = name;
         this.savedStartingBid = startingBid;
         this.savedCurrentBid = currentBid;
@@ -137,8 +138,9 @@ public class AuctionCardController {
         DashboardController dashboard = DashboardController.getInstance();
 
         if (dashboard != null) {
-            // --- NEW: Hand over ALL 9 pieces of data to the Dashboard! ---
+
             dashboard.showItemPreview(
+                    this.savedId,
                     savedName,
                     savedDescription,
                     savedImagePath,

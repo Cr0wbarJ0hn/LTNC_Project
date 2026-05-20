@@ -1,5 +1,6 @@
 package com.example.auctionapp.controller;
 
+import com.example.auctionapp.model.UserSession;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Hyperlink;
@@ -12,6 +13,17 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.example.auctionapp.model.NetworkMessage;
+import com.example.auctionapp.model.UserSession;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.example.auctionapp.model.NetworkMessage;
+import com.example.auctionapp.model.UserSession;
+import javafx.application.Platform;
+import javafx.application.Platform;
 
 import java.io.ByteArrayInputStream;
 import java.util.Base64;
@@ -20,6 +32,9 @@ public class DetailedBidController {
 
     // --- FXML IDs from your Scene Builder ---
     @FXML private Label DetailTimeLeft;
+
+    private int currentAuctionId;
+    private String currentUsername = UserSession.getUsername();
     @FXML private TextField manualBidInput;
     @FXML private VBox autoBidSettings; // Container for Max Bid, etc.
     @FXML private CheckBox autoBidSwitch;
@@ -45,8 +60,8 @@ public class DetailedBidController {
 
 
     // --- Method to catch the data from the Browse screen ---
-    public void setItemData(String name, String description, String price, String condition, String seller, String imagePath, String increment, String timeLeft) {
-
+    public void setItemData(int auctionId, String name, String description, String price, String condition, String seller, String imagePath, String increment, String timeLeft) {
+        this.currentAuctionId = auctionId;
         ItemName.setText(name);
         DetailDescription.setText(description);
         DetailPrice.setText("$" + price);
@@ -55,9 +70,6 @@ public class DetailedBidController {
         DetailIncrement.setText("$" + increment);
         DetailTimeLeft.setText(timeLeft);
 
-
-        // 2. Load the image safely
-        // Safely load the image
         try {
             // --- FIXED IMAGE LOADING LOGIC ---
             if (imagePath != null && !imagePath.isEmpty()) {
@@ -98,6 +110,8 @@ public class DetailedBidController {
         series.getData().add(new XYChart.Data<>("Today", 1000)); // You can replace 1000 with Double.parseDouble(price) later!
         priceHistoryChart.getData().add(series);
     }
+
+
     // 1. Declare the button at the top with your other FXML variables
     @FXML private javafx.scene.control.Button backButton;
 
@@ -129,6 +143,66 @@ public class DetailedBidController {
             e.printStackTrace();
         }
     }
+
+
+    @FXML
+    public void handleManualBid() {
+        String inputString = manualBidInput.getText().trim();
+        if (inputString.isEmpty()) return;
+
+        try {
+            double amount = Double.parseDouble(inputString);
+
+            // 1. Pack variables inside a sub-payload layout structure
+            JsonObject payload = new JsonObject();
+            payload.addProperty("auctionId", this.currentAuctionId); // <-- The tracking variable you fixed earlier!
+            payload.addProperty("bidAmount", amount);
+            payload.addProperty("username", "ActiveUser"); // Fallback fallback wrapper field
+
+            // 2. Wrap it neatly inside your unified NetworkMessage standard
+            Gson clientGson = new Gson();
+            NetworkMessage messageEnvelope = new NetworkMessage("BID", clientGson.toJson(payload), true);
+
+            // 3. Dispatch out onto your network infrastructure on a background worker thread
+            new Thread(() -> {
+                try {
+                    UserSession.getOut().println(clientGson.toJson(messageEnvelope));
+                    UserSession.getOut().flush();
+
+                    // Listen immediately for response packet from ClientHandler.java
+                    String responseText;
+                    while ((responseText = UserSession.getIn().readLine()) != null) {
+                        NetworkMessage serverReply = clientGson.fromJson(responseText, NetworkMessage.class);
+
+                        if ("BID_RESPONSE".equals(serverReply.action)) {
+                            Platform.runLater(() -> {
+                                if (serverReply.success) {
+                                    // Update price text on display instantly upon affirmation
+                                    DetailPrice.setText("$" + String.format("%.2f", amount));
+                                    manualBidInput.clear();
+                                    manualBidInput.setPromptText("Bid Successful!");
+                                    manualBidInput.setStyle("-fx-prompt-text-fill: #27ae60; -fx-border-color: #27ae60;");
+                                } else {
+                                    // Validation error printed into visual alerts cleanly
+                                    manualBidInput.clear();
+                                    manualBidInput.setPromptText(serverReply.data); // Holds error description text
+                                    manualBidInput.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
+                                }
+                            });
+                            break; // Action handled successfully
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }).start();
+
+        } catch (NumberFormatException nfe) {
+            manualBidInput.setPromptText("Enter valid number!");
+            manualBidInput.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
+        }
+    }
+
     @FXML
     public void initialize() {
 

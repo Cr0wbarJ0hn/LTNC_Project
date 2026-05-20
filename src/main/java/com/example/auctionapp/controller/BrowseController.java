@@ -130,7 +130,7 @@ public class BrowseController {
                 JsonObject itemObj = element.getAsJsonObject();
 
                 try {
-                    // 3. Extract data using the JSON keys we set in DatabaseManager
+                    int id = itemObj.get("id").getAsInt();
                     String name = itemObj.get("itemName").getAsString();
                     double startPrice = itemObj.get("startingPrice").getAsDouble();
                     double currentPrice = itemObj.get("currentPrice").getAsDouble();
@@ -161,6 +161,7 @@ public class BrowseController {
                     // Note: Ensure your cardController.setCardData can accept an 'Image' or
                     // just pass the base64Image string if you handle decoding inside the card.
                     cardController.setCardData(
+                            id,
                             name,
                             startPrice,
                             currentPrice,

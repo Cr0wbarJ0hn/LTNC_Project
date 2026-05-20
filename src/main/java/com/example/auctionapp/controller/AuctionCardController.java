@@ -85,24 +85,25 @@ public class AuctionCardController {
 
         // --- FIXED IMAGE LOADING LOGIC ---
         if (imagePath != null && !imagePath.isEmpty()) {
-            // Safely load the image
             try {
-                if (imagePath != null && !imagePath.isEmpty()) {
-                    // 1. If it starts with /9j/ or is very long, it's Base64
-                    if (imagePath.length() > 200) {
-                        byte[] decodedBytes = Base64.getDecoder().decode(imagePath);
-                        Image image = new Image(new ByteArrayInputStream(decodedBytes));
-                        itemImageView.setImage(image);
-                    } else {
-                        // 2. Fallback for old file paths (like during testing)
-                        String formattedUrl = new java.io.File(imagePath).toURI().toString();
-                        Image image = new Image(formattedUrl);
-                        itemImageView.setImage(image);
-                    }
+                if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+                    // 1. New Cloud Storage Setup: Load directly from the Supabase web URL in the background
+                    Image image = new Image(imagePath, true);
+                    itemImageView.setImage(image);
+                } else if (imagePath.length() > 200 || imagePath.startsWith("/9j/")) {
+                    // 2. Fallback: Old Base64 logic
+                    byte[] decodedBytes = Base64.getDecoder().decode(imagePath.trim());
+                    Image image = new Image(new ByteArrayInputStream(decodedBytes));
+                    itemImageView.setImage(image);
+                } else {
+                    // 3. Fallback: Old local file paths
+                    String formattedUrl = new java.io.File(imagePath).toURI().toString();
+                    Image image = new Image(formattedUrl);
+                    itemImageView.setImage(image);
                 }
             } catch (Exception e) {
-                System.out.println("Card Image Error: Could not load image data.");
-                // e.printStackTrace(); // Uncomment this if it still doesn't work to see the error
+                System.out.println("Card Image Error: Could not load image from target path: " + imagePath);
+                e.printStackTrace();
             }
         }
     }

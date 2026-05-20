@@ -187,7 +187,7 @@
     -fx-shape: "M180-204.62v-59.99h72.31v-298.47q0-80.69 49.81-142.69 49.8-62 127.88-79.31V-810q0-20.83 14.57-35.42Q459.14-860 479.95-860q20.82 0 35.43 14.58Q530-830.83 530-810v24.92q78.08 17.31 127.88 79.31 49.81 62 49.81 142.69v298.47H780v59.99H180Zm300-293.07Zm-.07 405.38q-29.85 0-51.04-21.24-21.2-21.24-21.2-51.07h144.62q0 29.93-21.26 51.12-21.26 21.19-51.12 21.19Zm-167.62-172.3h335.38v-298.47q0-69.46-49.11-118.57-49.12-49.12-118.58-49.12-69.46 0-118.58 49.12-49.11 49.11-49.11 118.57v298.47Z";
 }
 
-/* --- 3. THE HOVER & ACTIVE STATES --- */
+
 .nav-button:hover .nav-icon {
     -fx-background-color: rgba(255, 255, 255, 0.8); /* White on hover */
 }
@@ -299,9 +299,9 @@
     -fx-background-color: #eeeeee;
 }
 
-/* Style for the icon inside the category button */
+
 .category-btn .image-view {
-    /* This ensures icons stay a consistent color if you use monochrome icons */
+
     -fx-opacity: 0.8;
 }
 
@@ -314,7 +314,7 @@
     -fx-max-width: 40px;
     -fx-max-height: 40px;
 
-    /* THE MAGIC RADIUS: 15 is the "sweet spot" for modern rounded squares */
+
     -fx-background-radius: 12;
 
     -fx-alignment: CENTER;
@@ -354,7 +354,6 @@
     -fx-background-color: #392BD1;
 }
 .modern-combo-box {
-    -fx-background-color: #FFFFFF;
     -fx-border-color: #9aa6b2; /* Subtle gray border */
     -fx-border-width: 1.5px;
     -fx-border-radius: 8px;
@@ -362,16 +361,19 @@
     -fx-font-size: 16px;
     -fx-padding: 2px;
     -fx-cursor: hand;
+
+    /* FIX 1: Overrides the default white background JavaFX uses internally for list controls */
+    -fx-control-inner-background: #151824;
 }
 
 /* Make the border turn blue when clicked/focused */
 .modern-combo-box:focused, .modern-combo-box:showing {
-    -fx-border-color: #2563eb;
+    -fx-border-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
 }
 
 /* 2. The Text Inside the Box */
 .modern-combo-box .list-cell {
-    -fx-text-fill: #222831;
+    -fx-text-fill: white;
     -fx-background-color: transparent;
     -fx-padding: 8px 10px;
 }
@@ -384,41 +386,46 @@
 
 /* The actual arrow triangle */
 .modern-combo-box .arrow {
-    -fx-background-color: #222831;
+    -fx-background-color: #9aa6b2; /* Changed to light gray so it's visible on dark backgrounds */
 }
 
-/* 4. The Popup Menu (The list that drops down) */
-.modern-combo-box-popup .list-view {
-    -fx-background-color: #FFFFFF;
-    -fx-border-color: #9aa6b2;
+/* 4. The Popup Menu (The list that drops down)
+   FIX 2: Swapped out your custom name for the proper JavaFX sub-selector structure */
+.modern-combo-box .combo-box-popup .list-view {
+    -fx-background-color: #151824;
+    -fx-border-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
     -fx-padding: 4px;
-    /* Adds a modern drop-shadow behind the menu */
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 10, 0, 0, 4);
 }
 
-/* 5. The Individual Items in the Dropdown */
-.modern-combo-box-popup .list-cell {
-    -fx-text-fill: #222831;
+/* 5. The Individual Items in the Dropdown
+   FIX 3: Updated to target the correct popup container path */
+.modern-combo-box .combo-box-popup .list-cell {
+    -fx-text-fill: white;
     -fx-padding: 10px;
     -fx-background-color: transparent;
     -fx-background-radius: 5px;
 }
 
 /* When hovering over an item in the list */
-.modern-combo-box-popup .list-cell:hover {
-    -fx-background-color: #f0f4f8; /* Very light blue/gray */
-    -fx-text-fill: #333dab;
+.modern-combo-box .combo-box-popup .list-cell:hover {
+    -fx-background-color: #313854;
+    -fx-text-fill: white;
 }
 
 /* When an item is currently selected */
-.modern-combo-box-popup .list-cell:selected {
-    -fx-background-color: #333dab;
+.modern-combo-box .combo-box-popup .list-cell:selected {
+    -fx-border-color: #9aa6b2;
+    -fx-background-color: #4f46e5;
     -fx-text-fill: #FFFFFF;
 }
 /* =========================================
    1. MAIN DATE PICKER INPUT BOX
+   ========================================= */
+/* =========================================
+   1. THE MAIN INPUT BOX
    ========================================= */
 .modern-date-picker {
     -fx-background-color: transparent;
@@ -426,19 +433,19 @@
 
 /* The text field where the date is typed */
 .modern-date-picker > .text-field {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #d1d5db;
-    -fx-border-radius: 6px;
-    -fx-background-radius: 6px;
+    -fx-background-color: #151824;
+    -fx-border-color: #9aa6b2; /* Matching combo box gray border */
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
     -fx-padding: 8px 12px;
-    -fx-font-size: 14px;
-    -fx-text-fill: #374151;
+    -fx-font-size: 16px;
+    -fx-text-fill: white;
 }
 
 /* When the user clicks into the text field */
 .modern-date-picker > .text-field:focused {
-    -fx-border-color: #3b82f6;
-    -fx-effect: dropshadow(three-pass-box, rgba(59, 130, 246, 0.3), 5, 0, 0, 0);
+    -fx-border-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
 }
 
 /* =========================================
@@ -446,43 +453,42 @@
    ========================================= */
 .modern-date-picker .arrow-button {
     -fx-background-color: transparent;
-    -fx-padding: 0 10 0 10;
+    -fx-padding: 0 12 0 12;
     -fx-cursor: hand;
 }
 
 /* The actual little calendar/arrow icon */
 .modern-date-picker .arrow-button .arrow {
-    -fx-background-color: #9ca3af;
+    -fx-background-color: #9aa6b2; /* Matches combo box arrow */
 }
 
 /* Change icon color when hovering */
 .modern-date-picker .arrow-button:hover .arrow {
-    -fx-background-color: #3b82f6;
+    -fx-background-color: #7c3aed;
 }
 
 /* =========================================
    3. THE POPUP CALENDAR BOX
-   (Must use the default .date-picker-popup class!)
    ========================================= */
 .date-picker-popup {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #e5e7eb;
+    -fx-background-color: #151824;
+    -fx-border-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
-    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.15), 10, 0, 0, 5);
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.4), 10, 0, 0, 5);
 }
 
 /* =========================================
    4. MONTH & YEAR HEADER (Top of Popup)
    ========================================= */
 .date-picker-popup .month-year-pane {
-    -fx-background-color: #f9fafb;
+    -fx-background-color: #1a1d2c; /* Slightly different dark shade for distinction */
     -fx-padding: 10px;
     -fx-background-radius: 8px 8px 0 0;
 }
 
 .date-picker-popup .month-year-pane .label {
-    -fx-text-fill: #111827;
+    -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 14px;
 }
@@ -490,49 +496,62 @@
 /* The left/right arrows to change the month */
 .date-picker-popup .month-year-pane .left-button .arrow,
 .date-picker-popup .month-year-pane .right-button .arrow {
-    -fx-background-color: #6b7280;
+    -fx-background-color: #9aa6b2;
 }
 
 .date-picker-popup .month-year-pane .left-button:hover .arrow,
 .date-picker-popup .month-year-pane .right-button:hover .arrow {
-    -fx-background-color: #3b82f6;
+    -fx-background-color: #7c3aed;
 }
 
 /* =========================================
    5. INDIVIDUAL DAY CELLS (The Dates)
    ========================================= */
 .date-picker-popup .calendar-grid {
-    -fx-background-color: #ffffff;
+    -fx-background-color: #151824;
     -fx-padding: 10px;
+}
+
+/* Day labels (Mon, Tue, Wed...) at the top of the grid */
+.date-picker-popup .week-number-cell,
+.date-picker-popup .day-name-cell {
+    -fx-text-fill: #9aa6b2;
+    -fx-font-size: 12px;
 }
 
 .date-picker-popup .day-cell {
     -fx-background-color: transparent;
-    -fx-text-fill: #374151;
+    -fx-text-fill: white;
     -fx-font-size: 13px;
-    -fx-padding: 5px;
-    -fx-background-radius: 4px;
+    -fx-padding: 6px;
+    -fx-background-radius: 5px;
 }
 
 /* Hovering over a date */
 .date-picker-popup .day-cell:hover {
-    -fx-background-color: #eff6ff;
-    -fx-text-fill: #1d4ed8;
+    -fx-background-color: #313854; /* Match combo box item hover */
+    -fx-text-fill: white;
     -fx-cursor: hand;
 }
 
 /* The currently selected date */
 .date-picker-popup .day-cell:selected {
-    -fx-background-color: #3b82f6;
-    -fx-text-fill: #ffffff;
+    -fx-background-color: #4f46e5; /* Match combo box item selection purple */
+    -fx-text-fill: white;
     -fx-font-weight: bold;
 }
 
-/* Today's date (puts a subtle border around the current day) */
+/* Today's date (subtle accent outline around the current day) */
 .date-picker-popup .today {
-    -fx-border-color: #3b82f6;
-    -fx-border-width: 1px;
-    -fx-border-radius: 4px;
+    -fx-border-color: #7c3aed;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 5px;
+}
+
+/* Days belonging to the previous or next month (faded text color) */
+.date-picker-popup .previous-month,
+.date-picker-popup .next-month {
+    -fx-text-fill: #4b5563;
 }
 .sell-item-button3 {
     -fx-background-color: #261CC1; /* Solid bold blue/purple */
@@ -974,3 +993,22 @@
 .modern-switch:selected .mark {
     -fx-background-image: null;
 }
+.modern-input2 {
+    -fx-background-color: #151824;
+    -fx-border-color: #d1d5db; /* A clean, light gray border */
+    -fx-border-radius: 6px; /* Smooth rounded corners */
+    -fx-background-radius: 6px; /* Matches the border radius */
+    -fx-padding: 10px 14px; /* Gives the text room to breathe */
+    -fx-text-fill: white; /* Dark slate gray text instead of harsh black */
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #9ca3af; /* Lighter gray for the "Username" placeholder */
+}
+
+/* How the text box looks when the user clicks inside it (Focused) */
+.modern-input2:focused {
+    -fx-border-color:  linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);
+    -fx-border-width: 2px; /* Makes the border slightly thicker */
+    /* This next line removes JavaFX's ugly default focus ring */
+    -fx-background-insets: 0, 0, 0, 0;
+}
+

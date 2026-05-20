@@ -3,10 +3,7 @@ package com.example.auctionapp.controller;
 import com.example.auctionapp.model.NetworkMessage;
 import com.example.auctionapp.model.UserSession;
 import javafx.fxml.FXML;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
@@ -40,6 +37,7 @@ public class SellItemController {
     @FXML private ComboBox<String> conditionComboBox;
     @FXML private ImageView uploadedImageView;
     @FXML private Region regionCamera;
+    @FXML private Button submitButton;
 
 
     // --- Memory Variables ---
@@ -88,10 +86,9 @@ public class SellItemController {
             uploadedImageView.setManaged(false);
         }
     }
-
     @FXML
     public void submitAuction() {
-        // 1. Grab all data from the UI (Must be done on the UI thread)
+        // 1. Grab all data
         String itemName = auctionNameField.getText();
         String itemDescription = auctionDescriptionField.getText();
         String category = categoryComboBox.getValue();
@@ -100,20 +97,38 @@ public class SellItemController {
         String priceText = initialPriceField.getText();
         String incrementText = incrementField.getText();
 
-        // 2. THE BOUNCER: Validation (Stay on UI thread for this)
-        if (itemName.isEmpty() || category == null || condition == null || localDate == null || localDate.isBefore(java.time.LocalDate.now())) {
-            ErrorTextField.setText("Please fill out all fields and select a valid date!");
+        // 2. THE STRENGHTENED BOUNCER
+        // We add checks for description, price, and increment here
+        if (itemName.trim().isEmpty() ||
+                itemDescription.trim().isEmpty() ||
+                priceText.trim().isEmpty() ||
+                incrementText.trim().isEmpty() ||
+                category == null ||
+                condition == null ||
+                localDate == null) {
+
+            ErrorTextField.setText("Wait! All fields must be filled out.");
+            ErrorTextField.setStyle("-fx-text-fill: red;");
+            return; // Stops the method right here
+        }
+
+        // Check for past dates
+        if (localDate.isBefore(java.time.LocalDate.now())) {
+            ErrorTextField.setText("We can't auction things in the past! Pick a new date.");
             ErrorTextField.setStyle("-fx-text-fill: red;");
             return;
         }
 
         if (selectedImageFile == null) {
             ErrorTextField2.setText("Please submit a picture of your item");
-            ErrorTextField2.setStyle("-fx-text-fill: red;");
             return;
         }
 
-        // 3. START BACKGROUND THREAD (Network work starts here)
+        submitButton.setDisable(true);
+        submitButton.setText("Submitting...");
+
+
+
         new Thread(() -> {
             try {
                 // Parse numbers
@@ -133,7 +148,7 @@ public class SellItemController {
                     byte[] fileContent = Files.readAllBytes(selectedImageFile.toPath());
                     imageString = Base64.getEncoder().encodeToString(fileContent);
                 }
-                // --- NEW CODE ENDS HERE ---
+
 
                 // 4. CREATE JSON DATA (Clean & Professional)
                 Gson gson = new Gson();
@@ -167,10 +182,15 @@ public class SellItemController {
 
 
                     Platform.runLater(() -> {
+
+                        submitButton.setDisable(false);
+                        submitButton.setText("Submit");
+
                         if (response.success) {
+                            clearForm(); // Helper method to wipe fields
                             ErrorTextField3.setText("Successfully created your auction!");
                             ErrorTextField3.setStyle("-fx-text-fill: green;");
-                            clearForm(); // Helper method to wipe fields
+
                         } else {
                             ErrorTextField.setText("Server Error: " + response.data);
                             ErrorTextField.setStyle("-fx-text-fill: red;");
@@ -195,15 +215,31 @@ public class SellItemController {
 
     // Helper method to keep your code clean
     private void clearForm() {
+        // 1. Clear regular text fields
         auctionNameField.clear();
         auctionDescriptionField.clear();
-        categoryComboBox.setValue(null);
-        conditionComboBox.setValue(null);
         initialPriceField.clear();
         incrementField.clear();
-        endDatePicker.setValue(null);
+
+        // 2. Clear ComboBoxes and RESTORE the Prompt Text
+        categoryComboBox.getSelectionModel().clearSelection();
+        categoryComboBox.setValue(null); // This forces the prompt text back
+
+        conditionComboBox.getSelectionModel().clearSelection();
+        conditionComboBox.setValue(null);
+
+        // 3. Clear DatePicker text editor AND value
+        // (JavaFX requires clearing the editor, otherwise the text sticks around!)
+        if (endDatePicker != null) {
+            endDatePicker.setValue(null);
+            endDatePicker.getEditor().clear();
+        }
+
+        // 4. Clear errors and reset image
         ErrorTextField.setText("");
         ErrorTextField2.setText("");
+        ErrorTextField3.setText(""); // Added this to clear the success message too!
+
         selectedImageFile = null;
         if (uploadedImageView != null) {
             uploadedImageView.setImage(defaultPlaceholderImage);

@@ -1,38 +1,155 @@
 package com.example.auctionapp.server;
 
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.example.auctionapp.model.Items;
 import java.sql.*;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.Iterator;
 
 public class DatabaseManager {
-    // 1. UPDATED: Connection details for Supabase
-    // Replace [YOUR-PASSWORD] with your actual Supabase database password
-    private static final String URL = "jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres?user=postgres.dxhyrntoijscgblkjwys&password=Ekko2007@1410";
-    private static final String USER = "postgres";
+    private static final String URL = "jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres";
+    private static final String USER = "postgres.dxhyrntoijscgblkjwys";
     private static final String PASSWORD = "Ekko2007@1410";
 
     public static Connection getConnection() {
         try {
-            // 2. UPDATED: Load the PostgreSQL Driver
             Class.forName("org.postgresql.Driver");
             return DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (ClassNotFoundException e) {
-            System.out.println("PostgreSQL Driver not found. Add the dependency to your pom.xml!");
+            System.err.println("JDBC Driver missing!");
             return null;
         } catch (SQLException e) {
-            System.out.println("Cloud Database Connection Failed!");
+            System.err.println("--- CONNECTION FAILED ---");
             e.printStackTrace();
             return null;
         }
     }
 
-    public static void initializeTables() {
-        // 3. UPDATED: SQL Syntax changes
-        // MySQL 'INT AUTO_INCREMENT' becomes PostgreSQL 'SERIAL'
-        // MySQL 'DATETIME' becomes PostgreSQL 'TIMESTAMP'
+    public static byte[] compressAndResizeImage(byte[] originalBytes, int targetWidth) {
+        try {
+            // 1. Convert byte array back into a live BufferedImage
+            BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(originalBytes));
+            if (originalImage == null) {
+                System.err.println("[Compression] Failed to read image bytes. Returning original.");
+                return originalBytes;
+            }
 
+            // 2. Calculate proportional height so the image doesn't get stretched or squished
+            int originalWidth = originalImage.getWidth();
+            int originalHeight = originalImage.getHeight();
+
+            // If the image is already smaller than our target width, don't upscale it!
+            if (originalWidth <= targetWidth) {
+                targetWidth = originalWidth;
+            }
+            int targetHeight = (originalHeight * targetWidth) / originalWidth;
+
+            // 3. Create a new blank canvas with our downscaled dimensions
+            BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = resizedImage.createGraphics();
+
+            // Apply high-quality rendering hints so it doesn't look pixelated
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Draw the old image onto the new small canvas
+            g2d.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
+            g2d.dispose();
+
+            // 4. Compress the JPEG quality down to 75%
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+            if (!writers.hasNext()) throw new IllegalStateException("No writers found for JPG");
+
+            ImageWriter writer = writers.next();
+            ImageOutputStream ios = ImageIO.createImageOutputStream(baos);
+            writer.setOutput(ios);
+
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            if (param.canWriteCompressed()) {
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionQuality(0.75f); // 0.75 = 75% quality (sweet spot for web)
+            }
+
+            // Write the compressed file to our byte stream
+            writer.write(null, new IIOImage(resizedImage, null, null), param);
+
+            // Clean up resources
+            writer.dispose();
+            ios.close();
+
+            System.out.println("[Compression] Success! Shrunk from " + (originalBytes.length / 1024) + "KB down to " + (baos.size() / 1024) + "KB");
+            return baos.toByteArray();
+
+        } catch (Exception e) {
+            System.err.println("[Compression] Error during image processing, using raw bytes: " + e.getMessage());
+            return originalBytes;
+        }
+    }
+
+
+    public static class SupabaseStorageManager {
+        private static final String PROJECT_ID = "dxhyrntoijscgblkjwys";
+        private static final String BUCKET_NAME = "auction-images";
+
+        // --- FIX 2: REPLACE THIS with your "service_role" secret key from Supabase Dashboard ---
+        // Go to Settings -> API -> Find "service_role" secret token.
+        private static final String API_KEY = System.getenv("SUPABASE_SERVICE_KEY");
+
+        public static String uploadImageToBucket(byte[] imageBytes, String fileName) {
+            String uploadUrl = "https://" + PROJECT_ID + ".supabase.co/storage/v1/object/" + BUCKET_NAME + "/" + fileName;
+
+            try {
+                // --- NEW: COMPRESS AND RESIZE BEFORE UPLOADING ---
+                // We set a max width boundary of 800px. Height scales automatically!
+                System.out.println("[Storage] Optimizing image file asset parameters...");
+                byte[] optimizedBytes = compressAndResizeImage(imageBytes, 800);
+
+                HttpClient client = HttpClient.newHttpClient();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(uploadUrl))
+                        .header("Authorization", "Bearer " + API_KEY)
+                        .header("apiKey", API_KEY)
+                        .header("Content-Type", "image/jpeg")
+                        .header("x-upsert", "true") // --- ADD THIS LINE HERE ---
+                        .POST(HttpRequest.BodyPublishers.ofByteArray(optimizedBytes))
+                        .build();
+
+                System.out.println("[Storage] Sending compressed upload request to Supabase...");
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                System.out.println("[Storage] Supabase Response Code: " + response.statusCode());
+
+                if (response.statusCode() == 200 || response.statusCode() == 201) {
+                    return "https://" + PROJECT_ID + ".supabase.co/storage/v1/object/public/" + BUCKET_NAME + "/" + fileName;
+                } else {
+                    System.err.println("[Storage] Error Response Body: " + response.body());
+                    return null;
+                }
+            } catch (Exception e) {
+                System.err.println("[Storage] Exception during upload:");
+                e.printStackTrace();
+                return null;
+            }
+        }
+    }
+
+    public static void initializeTables() {
         String createMembersTable = "CREATE TABLE IF NOT EXISTS members (" +
                 "email VARCHAR(100) UNIQUE, " +
                 "username VARCHAR(50) PRIMARY KEY, " +
@@ -40,7 +157,7 @@ public class DatabaseManager {
                 "role VARCHAR(20) DEFAULT 'USER')";
 
         String createItemsTable = "CREATE TABLE IF NOT EXISTS items (" +
-                "id SERIAL PRIMARY KEY, " + // SERIAL = Auto-increment
+                "id SERIAL PRIMARY KEY, " +
                 "itemName VARCHAR(100) NOT NULL, " +
                 "itemType VARCHAR(50), " +
                 "itemCondition VARCHAR(50), " +
@@ -51,10 +168,10 @@ public class DatabaseManager {
                 "id SERIAL PRIMARY KEY, " +
                 "itemId INT NOT NULL, " +
                 "seller VARCHAR(50) NOT NULL, " +
-                "startingPrice DOUBLE PRECISION NOT NULL, " + // DOUBLE -> DOUBLE PRECISION
+                "startingPrice DOUBLE PRECISION NOT NULL, " +
                 "currentPrice DOUBLE PRECISION NOT NULL, " +
                 "priceIncrement DOUBLE PRECISION NOT NULL, " +
-                "endTime TIMESTAMP NOT NULL, " +              // DATETIME -> TIMESTAMP
+                "endTime TIMESTAMP NOT NULL, " +
                 "active BOOLEAN DEFAULT TRUE, " +
                 "FOREIGN KEY (itemId) REFERENCES items(id))";
 
@@ -81,9 +198,7 @@ public class DatabaseManager {
     }
 
     public static String fetchAuctionsByCategory(String category) {
-        // 1. Create an empty JSON Array to hold all the items
         JsonArray jsonArray = new JsonArray();
-
         String query = "SELECT i.itemName, a.startingPrice, a.currentPrice, i.itemCondition, " +
                 "i.imagePath, i.description, a.seller, a.endTime, a.priceIncrement " +
                 "FROM items i " +
@@ -97,9 +212,7 @@ public class DatabaseManager {
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                // 2. For every row in the database, create a new JSON Object
                 JsonObject itemJson = new JsonObject();
-
                 itemJson.addProperty("itemName", rs.getString("itemName"));
                 itemJson.addProperty("startingPrice", rs.getDouble("startingPrice"));
                 itemJson.addProperty("currentPrice", rs.getDouble("currentPrice"));
@@ -109,15 +222,11 @@ public class DatabaseManager {
                 itemJson.addProperty("seller", rs.getString("seller"));
                 itemJson.addProperty("endTime", rs.getTimestamp("endTime").getTime());
                 itemJson.addProperty("priceIncrement", rs.getDouble("priceIncrement"));
-
-                // 3. Add the object to our array
                 jsonArray.add(itemJson);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        // 4. Return the beautifully formatted JSON string
         return jsonArray.toString();
     }
 
@@ -128,21 +237,48 @@ public class DatabaseManager {
         try (Connection conn = getConnection()) {
             if (conn == null) return;
 
-            // Step 1: Insert Item
+            String databaseImagePath = item.getImagePath();
+
+            if (databaseImagePath != null && !databaseImagePath.startsWith("http")) {
+                try {
+                    // --- FIX 1: STRIP BASE64 DATA PREFIXES AND WHITESPACE ---
+                    // Removes "data:image/jpeg;base64," if the client appended it
+                    if (databaseImagePath.contains(",")) {
+                        databaseImagePath = databaseImagePath.substring(databaseImagePath.indexOf(",") + 1);
+                    }
+                    // Strip out any accidental spaces or hidden newline characters
+                    databaseImagePath = databaseImagePath.replaceAll("\\s", "");
+
+                    byte[] imageBytes = java.util.Base64.getDecoder().decode(databaseImagePath);
+                    String uniqueFileName = "item_" + System.currentTimeMillis() + ".jpg";
+
+                    // Attempt cloud storage transfer
+                    String publicImageUrl = SupabaseStorageManager.uploadImageToBucket(imageBytes, uniqueFileName);
+
+                    if (publicImageUrl != null) {
+                        databaseImagePath = publicImageUrl;
+                        System.out.println("Uploaded image successfully! URL: " + databaseImagePath);
+                    } else {
+                        System.err.println("[Warning] Storage upload returned null. Falling back to storing Base64 text in DB.");
+                    }
+                } catch (IllegalArgumentException e) {
+                    System.err.println("CRITICAL: Failed to decode Base64 image data! Invalid characters detected. Saving raw text fallback.");
+                    e.printStackTrace();
+                }
+            }
+
             PreparedStatement itemStmt = conn.prepareStatement(insertItemSql, Statement.RETURN_GENERATED_KEYS);
             itemStmt.setString(1, item.getName());
             itemStmt.setString(2, item.getType());
             itemStmt.setString(3, item.getCondition());
             itemStmt.setString(4, item.getDescription());
-            itemStmt.setString(5, item.getImagePath());
+            itemStmt.setString(5, databaseImagePath); // This will now save the clean URL string
             itemStmt.executeUpdate();
 
-            // Step 2: Get the generated ID
             ResultSet rs = itemStmt.getGeneratedKeys();
             if (rs.next()) {
                 int generatedItemId = rs.getInt(1);
 
-                // Step 3: Insert Auction
                 PreparedStatement auctionStmt = conn.prepareStatement(insertAuctionSql);
                 auctionStmt.setInt(1, generatedItemId);
                 auctionStmt.setString(2, seller);

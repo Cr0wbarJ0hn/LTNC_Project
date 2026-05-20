@@ -88,13 +88,54 @@ public class ClientHandler implements Runnable {
 
     private void handleSubmitAuction(JsonObject request) {
         try {
+            String rawImagePath = request.get("imagePath").getAsString();
+            String finalDatabasePath = rawImagePath; // Fallback to raw base64 if upload fails
+
+            // Check if the image path looks like a Base64 string instead of a local file path/URL
+            if (rawImagePath != null && (rawImagePath.startsWith("/9j/") || rawImagePath.contains(","))) {
+                try {
+                    System.out.println("[SERVER LOG] Base64 image detected. Attempting Supabase upload...");
+
+                    // 1. Clean the base64 string if it contains a data URI prefix
+                    String cleanBase64 = rawImagePath;
+                    if (cleanBase64.contains(",")) {
+                        cleanBase64 = cleanBase64.split(",")[1];
+                    }
+
+                    // 2. Decode the string into a byte array
+                    byte[] imageBytes = java.util.Base64.getDecoder().decode(cleanBase64.trim());
+                    System.out.println("[SERVER LOG] Successfully decoded image bytes: " + imageBytes.length);
+
+                    // 3. Generate a unique name for the file in the bucket
+                    String uniqueFileName = "auction_" + System.currentTimeMillis() + ".jpg";
+
+                    // 4. Upload it using your utility class
+
+                    // TODO: Verify your utility class name is 'SupabaseStorageManager'
+                    String publicUrl = DatabaseManager.SupabaseStorageManager.uploadImageToBucket(imageBytes, uniqueFileName);
+
+                    if (publicUrl != null && !publicUrl.isEmpty()) {
+                        finalDatabasePath = publicUrl;
+                        System.out.println("[SERVER LOG] Upload successful! Public URL: " + finalDatabasePath);
+                    } else {
+                        System.err.println("[SERVER WARNING] Upload method returned an empty URL. Falling back to text.");
+                    }
+                } catch (IllegalArgumentException e) {
+                    System.err.println("[SERVER ERROR] Base64 decoding failed: " + e.getMessage());
+                } catch (Exception e) {
+                    System.err.println("[SERVER ERROR] Supabase storage upload sequence failed:");
+                    e.printStackTrace();
+                }
+            }
+
+            // Create the item using the resulting path (either the public cloud URL or fallback text)
             Items newItem = new Items(
                     0,
                     request.get("itemType").getAsString(),
                     request.get("itemName").getAsString(),
                     request.get("itemCondition").getAsString(),
                     request.get("description").getAsString(),
-                    request.get("imagePath").getAsString()
+                    finalDatabasePath
             );
 
             DatabaseManager.insertItemAndAuction(
@@ -107,6 +148,8 @@ public class ClientHandler implements Runnable {
 
             sendMessage(gson.toJson(new NetworkMessage("SUBMIT_SUCCESS", "Posted!", true)));
         } catch (Exception e) {
+            System.err.println("[SERVER ERROR] Error handling SUBMIT_AUCTION request:");
+            e.printStackTrace();
             sendMessage(gson.toJson(new NetworkMessage("SUBMIT_ERROR", "Server error.", false)));
         }
     }

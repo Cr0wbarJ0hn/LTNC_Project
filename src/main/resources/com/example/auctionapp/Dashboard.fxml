@@ -224,7 +224,7 @@
                                           </Label>
                                           <Label fx:id="previewDescription" alignment="TOP_LEFT" prefHeight="185.0" prefWidth="492.0" text="Description details..." textFill="#b9c5d0" wrapText="true">
                                              <font>
-                                                <Font name="Segoe UI" size="16.0" />
+                                                <Font name="Segoe UI" size="17.0" />
                                              </font>
                                              <style>
                                     -fx-line-spacing: 5px;

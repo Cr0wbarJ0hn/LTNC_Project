@@ -8,6 +8,8 @@ module com.example.auctionapp {
     requires eu.hansolo.tilesfx;
     requires java.sql;
     requires com.google.gson;
+    requires java.net.http;
+    requires java.desktop;
 
     opens com.example.auctionapp to javafx.fxml;
     exports com.example.auctionapp;

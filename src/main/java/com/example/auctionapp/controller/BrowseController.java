@@ -19,6 +19,15 @@ import java.util.Base64;
 import java.io.ByteArrayInputStream;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Region;
+import javafx.animation.Animation;
+import javafx.animation.FadeTransition;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
+import com.example.auctionapp.model.NetworkMessage;
+import javafx.util.Duration;
+import com.google.gson.Gson;
+import javafx.application.Platform;
 
 import javafx.scene.layout.VBox;
 
@@ -35,6 +44,69 @@ public class BrowseController {
         this.mainDashboard = mainDashboard;
     }
 
+    public void fetchCategoryAuctions(String targetCategory) {
+
+        if (categoryTitleLabel != null) {
+            categoryTitleLabel.setText(targetCategory);
+        }
+
+        // Ensure the empty layout indicator is hidden while loading
+        if (emptyRecentPane != null) emptyRecentPane.setVisible(false);
+
+        // 1. Clear any old items and instantly drop the ghost shimmer skeletons into the FlowPane
+        recentItemsContainer.getChildren().clear();
+        for (int i = 0; i < 4; i++) {
+            recentItemsContainer.getChildren().add(createSkeletonCard());
+        }
+
+        // 2. Start the background network thread safely
+        new Thread(() -> {
+            try {
+                Gson gson = new Gson();
+                NetworkMessage request = new NetworkMessage("GET_CATEGORY", targetCategory, true);
+
+                // Send request over the socket streams
+                UserSession.getOut().println(gson.toJson(request));
+                UserSession.getOut().flush();
+
+                String serverResponse;
+                String cleanData = "";
+
+                // Wait for response without locking up the UI thread
+                while ((serverResponse = UserSession.getIn().readLine()) != null) {
+                    NetworkMessage response = gson.fromJson(serverResponse, NetworkMessage.class);
+                    if ("CATEGORY_RESPONSE".equals(response.action)) {
+                        cleanData = response.data;
+                        break;
+                    }
+                }
+
+                final String finalData = cleanData;
+
+                // 3. Once data arrives, jump back onto the FX Application Thread to clear skeletons and show real elements
+                Platform.runLater(() -> {
+                    recentItemsContainer.getChildren().clear();
+
+                    if (finalData == null || finalData.isEmpty() || finalData.equals("NO_ITEMS")) {
+                        if (emptyRecentPane != null) emptyRecentPane.setVisible(true);
+                    } else {
+                        // Call your existing method that parses the JSON and populates your real FXML cards
+                        displayAuctionsOnScreen(finalData);
+                    }
+                });
+
+            } catch (Exception e) {
+                System.err.println("Error reading server stream data inside Browse background thread:");
+                e.printStackTrace();
+
+                // Fallback clean-up UI call if network snaps
+                Platform.runLater(() -> {
+                    recentItemsContainer.getChildren().clear();
+                    if (emptyRecentPane != null) emptyRecentPane.setVisible(true);
+                });
+            }
+        }).start();
+    }
     public void displayAuctionsOnScreen(String serverResponse) {
         recentItemsContainer.getChildren().clear();
 
@@ -112,6 +184,110 @@ public class BrowseController {
             e.printStackTrace();
         }
     }
+
+
+    private VBox createSkeletonCard() {
+        // 1. Base VBox matching your card's FXML dimensions (prefHeight="551", prefWidth="402")
+        VBox skeletonCard = new VBox();
+        skeletonCard.setPrefSize(402.0, 551.0);
+
+        // 2. Inner Container matching your dark theme background color (#20202E)
+        Pane container = new Pane();
+        container.setPrefSize(402.0, 551.0); // Bound tightly to match card constraints
+        container.setStyle("-fx-background-color: #20202E; -fx-background-radius: 10px;");
+
+        // --- COMPONENT PLACEMENT ---
+
+        // Top Image Block (fitHeight="357", fitWidth="402")
+        Rectangle ghostImage = new Rectangle(402.0, 357.0);
+        ghostImage.setStyle("-fx-fill: #2B2B3C;");
+        // Apply smooth rounding matching your client side mask layout
+        Rectangle imageClip = new Rectangle(402.0, 357.0);
+        imageClip.setArcWidth(40.0);
+        imageClip.setArcHeight(40.0);
+        ghostImage.setClip(imageClip);
+
+        // Item Title Lines (layoutX="29", layoutY="371")
+        Rectangle ghostTitleLine1 = new Rectangle(180.0, 16.0);
+        ghostTitleLine1.setLayoutX(29.0);
+        ghostTitleLine1.setLayoutY(376.0);
+        ghostTitleLine1.setArcWidth(8.0);
+        ghostTitleLine1.setArcHeight(8.0);
+        ghostTitleLine1.setStyle("-fx-fill: #2B2B3C;");
+
+        Rectangle ghostTitleLine2 = new Rectangle(120.0, 16.0);
+        ghostTitleLine2.setLayoutX(29.0);
+        ghostTitleLine2.setLayoutY(402.0);
+        ghostTitleLine2.setArcWidth(8.0);
+        ghostTitleLine2.setArcHeight(8.0);
+        ghostTitleLine2.setStyle("-fx-fill: #2B2B3C;");
+
+        // Condition Status Badge (layoutX="289", layoutY="373", width="90", height="25")
+        Rectangle ghostCondition = new Rectangle(90.0, 25.0);
+        ghostCondition.setLayoutX(289.0);
+        ghostCondition.setLayoutY(373.0);
+        ghostCondition.setArcWidth(20.0);
+        ghostCondition.setArcHeight(20.0);
+        ghostCondition.setStyle("-fx-fill: #2B2B3C;");
+
+        // Seller Text Descriptor Block (layoutX="29", layoutY="426")
+        Rectangle ghostSeller = new Rectangle(100.0, 14.0);
+        ghostSeller.setLayoutX(29.0);
+        ghostSeller.setLayoutY(426.0);
+        ghostSeller.setArcWidth(8.0);
+        ghostSeller.setArcHeight(8.0);
+        ghostSeller.setStyle("-fx-fill: #2B2B3C;");
+
+        // Separator line breakpoint element (layoutX="21", layoutY="453", width="349")
+        Rectangle ghostSeparator = new Rectangle(349.0, 1.0);
+        ghostSeparator.setLayoutX(21.0);
+        ghostSeparator.setLayoutY(453.0);
+        ghostSeparator.setStyle("-fx-fill: #3E3E53;");
+
+        // Price Descriptor Element label (layoutX="29", layoutY="476")
+        Rectangle ghostPriceLabel = new Rectangle(70.0, 12.0);
+        ghostPriceLabel.setLayoutX(29.0);
+        ghostPriceLabel.setLayoutY(476.0);
+        ghostPriceLabel.setStyle("-fx-fill: #2B2B3C;");
+
+        // Actual Large Price Display Block (layoutX="28", layoutY="488")
+        Rectangle ghostPrice = new Rectangle(85.0, 24.0);
+        ghostPrice.setLayoutX(28.0);
+        ghostPrice.setLayoutY(492.0);
+        ghostPrice.setArcWidth(8.0);
+        ghostPrice.setArcHeight(8.0);
+        ghostPrice.setStyle("-fx-fill: #3A3A50;"); // Brighter accent reflection
+
+        // See Item Preview Action Button Frame (layoutX="239", layoutY="484", width="140", height="40")
+        Rectangle ghostButton = new Rectangle(140.0, 40.0);
+        ghostButton.setLayoutX(239.0);
+        ghostButton.setLayoutY(484.0);
+        ghostButton.setArcWidth(20.0);
+        ghostButton.setArcHeight(20.0);
+        ghostButton.setStyle("-fx-fill: #2B2B3C;");
+
+        // Mount structural primitives together inside layouts
+        container.getChildren().addAll(
+                ghostImage, ghostTitleLine1, ghostTitleLine2, ghostCondition,
+                ghostSeller, ghostSeparator, ghostPriceLabel, ghostPrice, ghostButton
+        );
+        skeletonCard.getChildren().add(container);
+
+        // 3. Shimmer Shading Effects Setup Loop
+        for (var node : container.getChildren()) {
+            if (node != ghostSeparator) {
+                FadeTransition pulse = new FadeTransition(Duration.millis(750), node);
+                pulse.setFromValue(1.0);
+                pulse.setToValue(0.35);
+                pulse.setCycleCount(Animation.INDEFINITE);
+                pulse.setAutoReverse(true);
+                pulse.play();
+            }
+        }
+
+        return skeletonCard;
+    }
+
     @FXML
     public void initialize() {
         // 1. Find out what category they clicked

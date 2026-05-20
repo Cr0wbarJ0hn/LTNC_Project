@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
@@ -9,6 +8,7 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -35,109 +35,79 @@
                 </Label>
             </children>
         </VBox>
-      <Separator prefWidth="200.0" />
-      <HBox prefHeight="777.0" prefWidth="1185.0">
-         <children>
-            <VBox prefHeight="622.0" prefWidth="438.0">
-               <children>
-                  <StackPane prefHeight="305.0" prefWidth="305.0">
-                     <VBox.margin>
-                        <Insets top="45.0" />
-                     </VBox.margin>
-                     <padding>
-                        <Insets left="3.0" />
-                     </padding>
-                     <opaqueInsets>
-                        <Insets />
-                     </opaqueInsets>
-                     <children>
-                        <Region fx:id="regionCamera" maxHeight="373.0" minWidth="250.0" prefHeight="373.0" prefWidth="250.0" styleClass="icon-2" />
-                        <ImageView fx:id="uploadedImageView" fitHeight="398.0" fitWidth="435.0" pickOnBounds="true" preserveRatio="true" />
-                     </children>
-                  </StackPane>
-                  <Label prefHeight="36.0" prefWidth="272.0" text="Upload an image of your item here" textFill="#888888">
+        <Separator prefWidth="200.0" />
+        <HBox prefHeight="777.0" prefWidth="1185.0">
+            <children>
+                <VBox prefHeight="622.0" prefWidth="438.0">
+                    <children>
+                        <StackPane prefHeight="305.0" prefWidth="305.0">
+                            <VBox.margin>
+                                <Insets top="45.0" />
+                            </VBox.margin>
+                            <padding>
+                                <Insets left="3.0" />
+                            </padding>
+                            <opaqueInsets>
+                                <Insets />
+                            </opaqueInsets>
+                            <children>
+                                <Region fx:id="regionCamera" maxHeight="373.0" minWidth="250.0" prefHeight="373.0" prefWidth="250.0" styleClass="icon-2" />
+                                <ImageView fx:id="uploadedImageView" fitHeight="398.0" fitWidth="435.0" pickOnBounds="true" preserveRatio="true" />
+                            </children>
+                        </StackPane>
+                        <Label prefHeight="36.0" prefWidth="272.0" text="Upload an image of your item here" textFill="#888888">
+                            <font>
+                                <Font size="17.0" />
+                            </font>
+                            <VBox.margin>
+                                <Insets left="90.0" top="40.0" />
+                            </VBox.margin>
+                        </Label>
+                        <Button mnemonicParsing="false" onAction="#uploadImage" prefHeight="81.0" prefWidth="219.0" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);" styleClass="sell-item-button2" stylesheets="@../../../style.css" text="Upload an image">
+                            <VBox.margin>
+                                <Insets left="110.0" top="180.0" />
+                            </VBox.margin>
+                        </Button>
+                        <Label fx:id="ErrorTextField2" alignment="CENTER" prefHeight="67.0" prefWidth="438.0" />
+                    </children>
+                </VBox>
+
+                <AnchorPane prefHeight="777.0" prefWidth="844.0">
+                    <children>
+                        <TextField fx:id="auctionNameField" layoutX="50.0" layoutY="35.0" prefHeight="60.0" prefWidth="770.0" promptText="Name" style="-fx-font-size: 16;" styleClass="modern-input2" />
+
+                        <TextField fx:id="auctionDescriptionField" alignment="TOP_LEFT" layoutX="50.0" layoutY="540.0" prefHeight="136.0" prefWidth="759.0" promptText="Description" style="-fx-background-color: #151824; -fx-font-size: 20;" styleClass="modern-input2" stylesheets="@../../../style.css">
                      <font>
-                        <Font size="17.0" />
-                     </font>
-                     <VBox.margin>
-                        <Insets left="90.0" top="40.0" />
-                     </VBox.margin>
-                  </Label>
-                  <Button mnemonicParsing="false" onAction="#uploadImage" prefHeight="81.0" prefWidth="219.0" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);" styleClass="sell-item-button2" stylesheets="@../../../style.css" text="Upload an image">
-                     <VBox.margin>
-                        <Insets left="110.0" top="150.0" />
-                     </VBox.margin>
-                  </Button>
-                  <Label fx:id="ErrorTextField2" alignment="CENTER" prefHeight="67.0" prefWidth="438.0" />
-               </children>
-            </VBox>
-            <VBox prefHeight="777.0" prefWidth="844.0">
-               <children>
-                  <TextField fx:id="auctionNameField" prefHeight="42.0" prefWidth="637.0" promptText="Name" styleClass="modern-input">
-                     <VBox.margin>
+                        <Font size="24.0" />
+                     </font></TextField>
+
+                        <ComboBox fx:id="categoryComboBox" layoutX="50.0" layoutY="160.0" prefHeight="60.0" prefWidth="770.0" promptText="Select categories" style="-fx-background-color: #151824;" styleClass="modern-combo-box" stylesheets="@../../../style.css" />
+
+                        <ComboBox fx:id="conditionComboBox" layoutX="51.0" layoutY="285.0" prefHeight="60.0" prefWidth="770.0" promptText="Select condition" style="-fx-background-color: #151824;" styleClass="modern-combo-box" />
+
+                        <TextField fx:id="initialPriceField" layoutX="51.0" layoutY="408.0" prefHeight="67.0" prefWidth="336.0" promptText="Starting price" style="-fx-background-color: #151824; -fx-font-size: 16;" styleClass="modern-input2">
+                            <padding>
+                                <Insets bottom="70.0" left="70.0" right="70.0" />
+                            </padding>
+                        </TextField>
+
+                        <TextField fx:id="incrementField" layoutX="474.0" layoutY="408.0" prefHeight="67.0" prefWidth="336.0" promptText="Price increment" style="-fx-background-color: #151824; -fx-font-size: 16;" styleClass="modern-input2" />
+
+                        <DatePicker fx:id="endDatePicker" layoutX="51.0" layoutY="739.0" prefHeight="60.0" prefWidth="800.0" promptText="Pick an end time" style="-fx-background-color: #151824;" styleClass="modern-date-picker" stylesheets="@../../../style.css" />
+
+                        <Label fx:id="ErrorTextField" alignment="CENTER" layoutX="138.0" layoutY="835.0" prefHeight="81.0" prefWidth="571.0" stylesheets="@../../../style.css" textAlignment="CENTER" />
+                    <Label fx:id="ErrorTextField3" alignment="BOTTOM_CENTER" layoutX="9.0" layoutY="835.0" prefHeight="17.0" prefWidth="829.0" />
+                    </children>
+                    <HBox.margin>
                         <Insets />
-                     </VBox.margin>
-                  </TextField>
-                  <TextField fx:id="auctionDescriptionField" prefHeight="50.0" prefWidth="601.0" promptText="Description" styleClass="modern-input" stylesheets="@../../../style.css">
-                     <VBox.margin>
-                        <Insets top="70.0" />
-                     </VBox.margin>
-                  </TextField>
-                  <ComboBox fx:id="categoryComboBox" prefHeight="50.0" prefWidth="772.0" promptText="Categories" styleClass="modern-combo-box" stylesheets="@../../../style.css">
-                     <VBox.margin>
-                        <Insets top="70.0" />
-                     </VBox.margin>
-                  </ComboBox>
-                  <ComboBox fx:id="conditionComboBox" prefHeight="50.0" prefWidth="866.0" promptText="Condition" styleClass="modern-combo-box">
-                     <VBox.margin>
-                        <Insets top="70.0" />
-                     </VBox.margin>
-                  </ComboBox>
-                  <TextField fx:id="initialPriceField" prefHeight="67.0" prefWidth="723.0" promptText="Starting Price" styleClass="modern-input">
-                     <VBox.margin>
-                        <Insets top="70.0" />
-                     </VBox.margin>
-                     <padding>
-                        <Insets bottom="70.0" left="70.0" right="70.0" />
-                     </padding>
-                  </TextField>
-                  <TextField fx:id="incrementField" prefHeight="50.0" prefWidth="601.0" promptText="Price increment">
-                     <VBox.margin>
-                        <Insets top="70.0" />
-                     </VBox.margin>
-                     <styleClass>
-                        <String fx:value="modern-input" />
-                        <String fx:value="glass-ui" />
-                     </styleClass>
-                  </TextField>
-                  <DatePicker fx:id="endDatePicker" prefHeight="47.0" prefWidth="812.0" styleClass="modern-date-picker" stylesheets="@../../../style.css">
-                     <VBox.margin>
-                        <Insets top="70.0" />
-                     </VBox.margin>
-                  </DatePicker>
-                  <Label fx:id="ErrorTextField" alignment="CENTER" prefHeight="81.0" prefWidth="571.0" stylesheets="@../../../style.css" textAlignment="CENTER">
-                     <VBox.margin>
-                        <Insets right="30.0" />
-                     </VBox.margin>
-                  </Label>
-               </children>
-               <padding>
-                  <Insets left="50.0" right="70.0" top="35.0" />
-               </padding>
-               <HBox.margin>
-                  <Insets />
-               </HBox.margin>
-            </VBox>
-         </children>
-      </HBox>
-      <Label fx:id="ErrorTextField3" alignment="BOTTOM_CENTER" prefHeight="57.0" prefWidth="852.0">
-         <VBox.margin>
-            <Insets left="25.0" />
-         </VBox.margin></Label>
-      <Button mnemonicParsing="false" onAction="#submitAuction" prefHeight="64.0" prefWidth="152.0" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);" styleClass="sell-item-button_new" stylesheets="@../../../style.css" text="Submit">
-         <VBox.margin>
-            <Insets left="370.0" />
-         </VBox.margin>
-      </Button>
+                    </HBox.margin>
+                </AnchorPane>
+            </children>
+        </HBox>
+        <Button fx:id="submitButton" mnemonicParsing="false" onAction="#submitAuction" prefHeight="70.0" prefWidth="155.0" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);" styleClass="sell-item-button_new" stylesheets="@../../../style.css" text="Submit">
+            <VBox.margin>
+                <Insets left="370.0" />
+            </VBox.margin>
+        </Button>
     </children>
 </VBox>

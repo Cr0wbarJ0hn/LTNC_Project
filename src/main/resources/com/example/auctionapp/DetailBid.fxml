@@ -66,7 +66,7 @@
                            </font>
                         </Label>
                         <Circle fill="#888888" layoutX="46.0" layoutY="418.0" radius="5.0" stroke="BLACK" strokeType="INSIDE" />
-                        <Label fx:id="DetailDescription" alignment="TOP_LEFT" layoutX="33.0" layoutY="76.0" prefHeight="227.0" prefWidth="569.0" text="Label" textFill="#c9c9c9" wrapText="true">
+                        <Label fx:id="DetailDescription" alignment="TOP_LEFT" layoutX="33.0" layoutY="76.0" prefHeight="227.0" prefWidth="581.0" text="Label" textFill="#c9c9c9" wrapText="true">
                            <font>
                               <Font name="Segoe UI Semilight" size="18.0" />
                            </font>

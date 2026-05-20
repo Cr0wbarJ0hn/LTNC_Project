@@ -54,70 +54,41 @@ public class HomeController {
     }
     public void openBrowseScreen() {
         String currentCategory = UserSession.getCurrentCategory();
-        System.out.println("CLIENT DEBUG: Fetching " + currentCategory + " from server...");
+        System.out.println("CLIENT DEBUG: Instantly switching to Browse screen for " + currentCategory + "...");
 
-        new Thread(() -> {
-            try {
-                Gson gson = new Gson();
-                NetworkMessage request = new NetworkMessage("GET_CATEGORY", currentCategory, true);
+        try {
+            // 1. Instantly load the Browse FXML screen on the UI thread
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/Browse.fxml"));
+            Parent browseScreen = loader.load();
 
-                UserSession.getOut().println(gson.toJson(request));
-                UserSession.getOut().flush();
+            // 2. Get the BrowseController instance
+            BrowseController controller = loader.getController();
 
-                String serverResponse;
-                String cleanData = "";
+            // 3. Find the Center Content Area and swap the view immediately
+            Pane dashboardCenterPane = (Pane) welcomeLabel.getScene().lookup("#centerContentArea");
 
-                while ((serverResponse = UserSession.getIn().readLine()) != null) {
-                    NetworkMessage response = gson.fromJson(serverResponse, NetworkMessage.class);
-                    if ("CATEGORY_RESPONSE".equals(response.action)) {
-                        cleanData = response.data;
-                        break;
-                    }
+            if (dashboardCenterPane != null) {
+                dashboardCenterPane.getChildren().clear();
+
+                if (browseScreen instanceof Region) {
+                    ((Region) browseScreen).prefWidthProperty().bind(dashboardCenterPane.widthProperty());
+                    ((Region) browseScreen).prefHeightProperty().bind(dashboardCenterPane.heightProperty());
                 }
 
-                final String finalData = cleanData;
+                dashboardCenterPane.getChildren().add(browseScreen);
 
-                // 4. Update the UI - THIS IS THE PART WE ARE FIXING
-                Platform.runLater(() -> {
-                    try {
-                        // A. Load the Browse.fxml file
-                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/Browse.fxml"));
-                        Parent browseScreen = loader.load();
+                // --- UPDATED CLEAN CODE HERE ---
+                // Just tell the controller what category it is. Do NOT touch its labels directly!
+                controller.fetchCategoryAuctions(currentCategory);
 
-                        // B. Pass the data to the BrowseController
-                        // (Make sure BrowseController has this method!)
-                        BrowseController controller = loader.getController();
-                        controller.displayAuctionsOnScreen(finalData);
-
-                        // C. Find the "Center Area" of your Dashboard
-                        // We use welcomeLabel to get the current scene, then look for the ID we set in Scene Builder
-                        Pane dashboardCenterPane = (Pane) welcomeLabel.getScene().lookup("#centerContentArea");
-
-                        if (dashboardCenterPane != null) {
-                            // D. Clear the "Home" content and put the "Browse" content in
-                            dashboardCenterPane.getChildren().clear();
-
-                            // Make the new screen stretch to fill the area
-                            if (browseScreen instanceof Region) {
-                                ((Region) browseScreen).prefWidthProperty().bind(dashboardCenterPane.widthProperty());
-                                ((Region) browseScreen).prefHeightProperty().bind(dashboardCenterPane.heightProperty());
-                            }
-
-                            dashboardCenterPane.getChildren().add(browseScreen);
-                        } else {
-                            System.out.println("ERROR: Could not find #centerContentArea. Check your FX:ID in Dashboard.fxml!");
-                        }
-
-                    } catch (Exception e) {
-                        System.out.println("CRASH: Error switching to Browse screen.");
-                        e.printStackTrace();
-                    }
-                });
-
-            } catch (Exception e) {
-                e.printStackTrace();
+            } else {
+                System.out.println("ERROR: Could not find #centerContentArea. Check your FX:ID in Dashboard.fxml!");
             }
-        }).start();
+
+        } catch (Exception e) {
+            System.out.println("CRASH: Error switching to Browse screen.");
+            e.printStackTrace();
+        }
     }
 
     private void applyRoundedCorners(StackPane card) {

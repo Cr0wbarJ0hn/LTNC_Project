@@ -1,8 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.Region?>
 
-
-<AnchorPane prefHeight="400.0" prefWidth="600.0" styleClass="prism-background" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="CONTROLLER_NAME">
-
+<AnchorPane prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: black;" styleClass="prism-background" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="CONTROLLER_NAME">
+   <children>
+      <ToggleButton layoutX="112.0" layoutY="104.0" mnemonicParsing="false" prefHeight="54.0" prefWidth="239.0" styleClass="nav-button" text="ToggleButton">
+         <toggleGroup>
+            <ToggleGroup fx:id="test" />
+         </toggleGroup>
+         <graphic>
+            <Region prefHeight="19.0" prefWidth="12.0">
+               <styleClass>
+                  <String fx:value="nav-icon" />
+                  <String fx:value="icon-home" />
+               </styleClass>
+            </Region>
+         </graphic>
+      </ToggleButton>
+      <ToggleButton layoutX="112.0" layoutY="200.0" mnemonicParsing="false" prefHeight="54.0" prefWidth="258.0" styleClass="nav-button" text="ToggleButton" toggleGroup="$test">
+         <graphic>
+            <ImageView fitHeight="27.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@icons/chair_48dp_FFFFFF_FILL0_wght400_GRAD0_opsz48.png" />
+               </image>
+            </ImageView>
+         </graphic></ToggleButton>
+   </children>
 </AnchorPane>

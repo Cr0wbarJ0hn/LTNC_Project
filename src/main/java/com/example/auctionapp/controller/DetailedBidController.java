@@ -17,12 +17,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.example.auctionapp.model.NetworkMessage;
-import com.example.auctionapp.model.UserSession;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.example.auctionapp.model.NetworkMessage;
-import com.example.auctionapp.model.UserSession;
-import javafx.application.Platform;
 import javafx.application.Platform;
 
 import java.io.ByteArrayInputStream;
@@ -30,36 +24,34 @@ import java.util.Base64;
 
 public class DetailedBidController {
 
-    // --- FXML IDs from your Scene Builder ---
     @FXML private Label DetailTimeLeft;
-
     private int currentAuctionId;
     private String currentUsername = UserSession.getUsername();
+
     @FXML private TextField manualBidInput;
-    @FXML private VBox autoBidSettings; // Container for Max Bid, etc.
+    @FXML private VBox autoBidSettings;
     @FXML private CheckBox autoBidSwitch;
     @FXML private Pane manualBidPane;
     @FXML private Pane autoBidPane;
     @FXML private Label DetailIncrement;
     @FXML private Hyperlink BackLink;
     @FXML private Label ItemName;
-    @FXML private ImageView DetailImage; // Left your spelling exactly as it is in FXML!
+    @FXML private ImageView DetailImage;
     @FXML private Label DetailDescription;
     @FXML private Label ConditionLabel;
     @FXML private Label Sellerlabel;
     @FXML private Label DetailPrice;
     @FXML private LineChart<String, Number> priceHistoryChart;
 
-    // This will hold the exact screen the user was looking at before clicking the item
+    // 🌟 NEW: Added the FXML binding to match your Scene Builder label component!
+    @FXML private Label leadingBidder;
+
     private javafx.scene.Node previousContent;
 
-    // Method to receive the old screen
     public void setPreviousContent(javafx.scene.Node previousContent) {
         this.previousContent = previousContent;
     }
 
-
-    // --- Method to catch the data from the Browse screen ---
     public void setItemData(int auctionId, String name, String description, String price, String condition, String seller, String imagePath, String increment, String timeLeft) {
         this.currentAuctionId = auctionId;
         ItemName.setText(name);
@@ -70,21 +62,20 @@ public class DetailedBidController {
         DetailIncrement.setText("$" + increment);
         DetailTimeLeft.setText(timeLeft);
 
+        // Clear the label layout state while loading from server
+        leadingBidder.setText("Loading...");
+        leadingBidder.setStyle("-fx-text-fill: #888888;");
+
         try {
-            // --- FIXED IMAGE LOADING LOGIC ---
             if (imagePath != null && !imagePath.isEmpty()) {
                 try {
                     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-                        // 1. New Cloud Storage Setup: Load directly from the Supabase web URL in the background
                         Image image = new Image(imagePath, true);
                         DetailImage.setImage(image);
                     } else if (imagePath.length() > 200 || imagePath.startsWith("/9j/")) {
-                        // 2. Fallback: Old Base64 logic
-                        byte[] decodedBytes = Base64.getDecoder().decode(imagePath.trim());
-                        Image image = new Image(new ByteArrayInputStream(decodedBytes));
+                        byte[] decodedBytes = Base64.getDecoder().decode(imagePath.trim());Image image = new Image(new ByteArrayInputStream(decodedBytes));
                         DetailImage.setImage(image);
                     } else {
-                        // 3. Fallback: Old local file paths
                         String formattedUrl = new java.io.File(imagePath).toURI().toString();
                         Image image = new Image(formattedUrl);
                         DetailImage.setImage(image);
@@ -96,44 +87,83 @@ public class DetailedBidController {
             }
         } catch (Exception e) {
             System.out.println("Card Image Error: Could not load image data.");
-            // e.printStackTrace(); // Uncomment this if it still doesn't work to see the error
         }
 
-
         setupPlaceholderChart();
+
+        // 🌟 NEW: Pull absolute up-to-the-second truths (like leading bidder) right as screen loads
+        fetchLiveAuctionData(auctionId);
+    }
+
+    
+    private void fetchLiveAuctionData(int auctionId) {
+        new Thread(() -> {
+            try {
+                Gson gson = new Gson();
+                NetworkMessage request = new NetworkMessage("GET_AUCTION_DETAIL", String.valueOf(auctionId), true);
+
+                UserSession.getOut().println(gson.toJson(request));
+                UserSession.getOut().flush();
+
+                String serverResponse;
+                while ((serverResponse = UserSession.getIn().readLine()) != null) {
+                    NetworkMessage response = gson.fromJson(serverResponse, NetworkMessage.class);
+                    if ("AUCTION_DETAIL_RESPONSE".equals(response.action)) {
+
+                        JsonObject obj = JsonParser.parseString(response.data).getAsJsonObject();
+                        String leader = obj.has("leadingBidder") ? obj.get("leadingBidder").getAsString() : "No bids yet";
+                        double livePrice = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0.0;
+
+                        Platform.runLater(() -> {
+                            // Update the Leading Bidder label dynamically
+                            if (leader == null || leader.trim().isEmpty() || leader.equals("No bids yet")) {
+                                leadingBidder.setText("No bids yet");
+                                leadingBidder.setStyle("-fx-text-fill: #888888;");
+                            } else {
+                                leadingBidder.setText(leader);
+                                leadingBidder.setStyle("-fx-text-fill: #34d399;"); // Vibrant green accent color!
+                            }
+
+                            // Keep the price accurate in case a background user bid while switching views
+                            if (livePrice > 0.0) {
+                                DetailPrice.setText("$" + String.format("%.2f", livePrice));
+                            }
+                        });
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to fetch live leading bidder statistics:");
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     private void setupPlaceholderChart() {
         XYChart.Series<String, Number> series = new XYChart.Series<>();
         series.getData().add(new XYChart.Data<>("Start", 500));
         series.getData().add(new XYChart.Data<>("Day 2", 750));
-        series.getData().add(new XYChart.Data<>("Today", 1000)); // You can replace 1000 with Double.parseDouble(price) later!
+        series.getData().add(new XYChart.Data<>("Today", 1000));
         priceHistoryChart.getData().add(series);
     }
 
-
-    // 1. Declare the button at the top with your other FXML variables
     @FXML private javafx.scene.control.Button backButton;
 
-    // 2. Add the method to handle the click
     @FXML
     public void goBack() {
         try {
-            // 1. Bring the right pane back
             javafx.scene.layout.Pane rightPane = (javafx.scene.layout.Pane) BackLink.getScene().lookup("#rightPane");
             if (rightPane != null) {
                 rightPane.setVisible(true);
                 rightPane.setManaged(true);
             }
 
-            // 2. Put the EXACT old screen back into the center
             javafx.scene.layout.Pane dashboardCenter = (javafx.scene.layout.Pane) BackLink.getScene().lookup("#centerContentArea");
 
             if (dashboardCenter != null && previousContent != null) {
                 dashboardCenter.getChildren().clear();
                 dashboardCenter.getChildren().add(previousContent);
             } else {
-                // Failsafe: If it lost the previous screen, click Home to prevent a blank screen
                 javafx.scene.control.ToggleButton homeBtn = (javafx.scene.control.ToggleButton) BackLink.getScene().lookup("#HomeButton");
                 if (homeBtn != null) homeBtn.fire();
             }
@@ -144,7 +174,6 @@ public class DetailedBidController {
         }
     }
 
-
     @FXML
     public void handleManualBid() {
         String inputString = manualBidInput.getText().trim();
@@ -153,23 +182,21 @@ public class DetailedBidController {
         try {
             double amount = Double.parseDouble(inputString);
 
-            // 1. Pack variables inside a sub-payload layout structure
             JsonObject payload = new JsonObject();
-            payload.addProperty("auctionId", this.currentAuctionId); // <-- The tracking variable you fixed earlier!
+            payload.addProperty("auctionId", this.currentAuctionId);
             payload.addProperty("bidAmount", amount);
-            payload.addProperty("username", "ActiveUser"); // Fallback fallback wrapper field
 
-            // 2. Wrap it neatly inside your unified NetworkMessage standard
+            // 🌟 FIXED: Changed hardcoded "ActiveUser" to match your authentic active UserSession profile data!
+            payload.addProperty("username", UserSession.getUsername());
+
             Gson clientGson = new Gson();
             NetworkMessage messageEnvelope = new NetworkMessage("BID", clientGson.toJson(payload), true);
 
-            // 3. Dispatch out onto your network infrastructure on a background worker thread
             new Thread(() -> {
                 try {
                     UserSession.getOut().println(clientGson.toJson(messageEnvelope));
                     UserSession.getOut().flush();
 
-                    // Listen immediately for response packet from ClientHandler.java
                     String responseText;
                     while ((responseText = UserSession.getIn().readLine()) != null) {
                         NetworkMessage serverReply = clientGson.fromJson(responseText, NetworkMessage.class);
@@ -177,19 +204,22 @@ public class DetailedBidController {
                         if ("BID_RESPONSE".equals(serverReply.action)) {
                             Platform.runLater(() -> {
                                 if (serverReply.success) {
-                                    // Update price text on display instantly upon affirmation
                                     DetailPrice.setText("$" + String.format("%.2f", amount));
+
+                                    // 🌟 NEW: Instantly declare yourself the leading bidder locally upon confirmation
+                                    leadingBidder.setText(UserSession.getUsername());
+                                    leadingBidder.setStyle("-fx-text-fill: #34d399;");
+
                                     manualBidInput.clear();
                                     manualBidInput.setPromptText("Bid Successful!");
                                     manualBidInput.setStyle("-fx-prompt-text-fill: #27ae60; -fx-border-color: #27ae60;");
                                 } else {
-                                    // Validation error printed into visual alerts cleanly
                                     manualBidInput.clear();
-                                    manualBidInput.setPromptText(serverReply.data); // Holds error description text
+                                    manualBidInput.setPromptText(serverReply.data);
                                     manualBidInput.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
                                 }
                             });
-                            break; // Action handled successfully
+                            break;
                         }
                     }
                 } catch (Exception ex) {
@@ -205,23 +235,19 @@ public class DetailedBidController {
 
     @FXML
     public void initialize() {
-
         autoBidPane.visibleProperty().bind(autoBidSwitch.selectedProperty());
         autoBidPane.managedProperty().bind(autoBidPane.visibleProperty());
 
-        // Manual-bid pane is visible ONLY when switch is NOT selected
         manualBidPane.visibleProperty().bind(autoBidSwitch.selectedProperty().not());
         manualBidPane.managedProperty().bind(manualBidPane.visibleProperty());
 
-        // 2. Add an animation (Optional but smooth)
         autoBidSwitch.selectedProperty().addListener((obs, wasAuto, isAuto) -> {
-
             System.out.println("Mode changed: " + (isAuto ? "AUTO" : "MANUAL"));
         });
 
         Rectangle clip = new Rectangle();
-        clip.setArcWidth(30);  // How round you want the left/right corners
-        clip.setArcHeight(30); // How round you want the top/bottom corners
+        clip.setArcWidth(30);
+        clip.setArcHeight(30);
         clip.widthProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
                 () -> DetailImage.getLayoutBounds().getWidth(),
                 DetailImage.layoutBoundsProperty()
@@ -232,7 +258,6 @@ public class DetailedBidController {
                 DetailImage.layoutBoundsProperty()
         ));
 
-        // 4. Apply the cut!
         DetailImage.setClip(clip);
     }
 }

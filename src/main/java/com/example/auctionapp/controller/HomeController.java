@@ -2,17 +2,23 @@ package com.example.auctionapp.controller;
 
 import com.example.auctionapp.model.NetworkMessage;
 import com.example.auctionapp.model.UserSession;
+import com.example.auctionapp.server.ClientHandler;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import javafx.animation.ScaleTransition;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.IOException;
@@ -24,9 +30,9 @@ public class HomeController {
     @FXML private StackPane electronicsCard;
     @FXML private StackPane fashionCard;
     @FXML private StackPane bookCard;
-    @FXML private StackPane collectablesCard;
-    @FXML private StackPane sportsCard;
-    @FXML private StackPane artCard;
+    @FXML private Button logoutButton;
+
+
 
     private void addHoverAnimation(StackPane card) {
         // Create the zoom-in animation (takes 0.2 seconds)
@@ -91,6 +97,9 @@ public class HomeController {
         }
     }
 
+
+
+
     private void applyRoundedCorners(StackPane card) {
         // 1. Safety check to prevent the crash you just experienced!
         if (card == null) {
@@ -140,6 +149,48 @@ public class HomeController {
         addHoverAnimation(fashionCard);
         addHoverAnimation(bookCard);
 
+    }
+
+    @FXML
+    public void handleLogoutAction(ActionEvent event) {
+        try {
+            // 1. Retrieve the network pipeline we saved during login
+            java.io.PrintWriter out = UserSession.getOut();
+
+            if (out != null) {
+                // 2. Create our JSON Request using Gson (matching your Login style)
+                Gson gson = new Gson();
+                JsonObject logoutRequest = new JsonObject();
+                logoutRequest.addProperty("action", "LOGOUT");
+                logoutRequest.addProperty("username", UserSession.getUsername());
+
+                // 3. Send the JSON to the server
+                out.println(gson.toJson(logoutRequest));
+                out.flush();
+
+                // 4. Wipe the local user data from client memory
+                UserSession.setUsername(null);
+            }
+
+            // 5. Capture the current window (Stage) from the button click event
+            Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/hello-view.fxml"));
+            Parent root = loader.load();
+
+            Scene scene = new Scene(root, 1265, 875); // Adjust dimensions to match your login screen
+            stage.setScene(scene);
+            stage.setTitle("UET Auction House - Secure Login");
+            stage.centerOnScreen();
+            stage.show();
+
+            System.out.println(" [UI] User logged out and redirected to login screen.");
+
+        } catch (Exception e) {
+            System.err.println(" Failed to process logout and switch screens:");
+            e.printStackTrace();
+        }
     }
     @FXML
     public void browseFurniture() {

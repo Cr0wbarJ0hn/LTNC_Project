@@ -113,6 +113,16 @@ public class AuctionCardController {
         applyImageRounding();
     }
 
+
+
+    public void updateLivePrice(double newPrice) {
+        // Change the text to the new price
+        priceLabel.setText("$" + newPrice);
+
+        // Optional UI Polish: Make the text flash a different color so the user notices!
+        priceLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
+    }
+
     private void applyImageRounding() {
         // 1. Create a rectangle to act as a "cookie cutter"
         Rectangle clip = new Rectangle();

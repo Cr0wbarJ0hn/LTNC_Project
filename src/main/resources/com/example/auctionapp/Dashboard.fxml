@@ -26,7 +26,7 @@
             <BorderPane fx:id="mainContent" layoutX="14.0" layoutY="23.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1200.0" prefWidth="1900.0" style="-fx-background-color: #FFFFFF;" styleClass="modern-card" stylesheets="@../../../style.css">
             
                      <left>
-                  <Pane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="300.0" style="-fx-background-color: #20202E;" stylesheets="@../../../style.css" BorderPane.alignment="CENTER">
+                  <Pane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="305.0" style="-fx-background-color: #20202E;" stylesheets="@../../../style.css" BorderPane.alignment="CENTER">
                      <children>
                         <ToggleButton fx:id="HomeButton" alignment="CENTER_LEFT" graphicTextGap="5.0" layoutX="28.0" layoutY="174.0" mnemonicParsing="false" onAction="#loadHomeView" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="Home">
                            <toggleGroup>
@@ -76,7 +76,7 @@
                               </HBox>
                            </graphic>
                         </ToggleButton>
-                        <Button graphicTextGap="20.0" layoutX="41.0" layoutY="1081.0" mnemonicParsing="false" onAction="#sellItem" prefHeight="70.0" prefWidth="223.0" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);;" styleClass="sell-item-button" stylesheets="@../../../style.css" text="Start an auction">
+                        <Button graphicTextGap="20.0" layoutX="39.0" layoutY="1081.0" mnemonicParsing="false" onAction="#sellItem" prefHeight="70.0" prefWidth="223.0" style="-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);;" styleClass="sell-item-button" stylesheets="@../../../style.css" text="Start an auction">
                            <font>
                               <Font name="Segoe UI Bold" size="14.0" />
                            </font>

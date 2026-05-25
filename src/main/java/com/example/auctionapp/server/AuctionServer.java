@@ -15,6 +15,7 @@ public class AuctionServer {
 
     public static void main(String[] args) {
         // 1. Set up the database first
+        DatabaseManager.initializeActiveAuctionsInMemory();
         System.out.println("Booting up system...");
         DatabaseManager.initializeTables();
 

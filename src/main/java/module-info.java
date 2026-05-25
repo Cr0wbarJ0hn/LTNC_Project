@@ -16,6 +16,7 @@ module com.example.auctionapp {
     exports com.example.auctionapp.controller;
     opens com.example.auctionapp.controller to javafx.fxml;
     opens com.example.auctionapp.model to com.google.gson;
+    opens com.example.auctionapp.exception to com.google.gson;
 }
 
 

@@ -14,9 +14,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import com.google.gson.JsonParser;
+
+import java.io.BufferedReader;
 import java.util.Base64;
 import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.layout.Region;
 import javafx.animation.Animation;
@@ -33,7 +38,13 @@ import javafx.scene.layout.VBox;
 
 
 public class BrowseController {
+
+    private static Thread globalListenerThread = null;
+    public static BrowseController activeBrowseScreen = null;
+    private static volatile boolean isListening = false;
+    private HashMap<Integer, AuctionCardController> liveCards = new HashMap<>();
     private DashboardController mainDashboard;
+
 
     @FXML
     private Label categoryTitleLabel;
@@ -46,69 +57,39 @@ public class BrowseController {
 
     public void fetchCategoryAuctions(String targetCategory) {
 
+        // 1. Set titles and hide empty state
         if (categoryTitleLabel != null) {
             categoryTitleLabel.setText(targetCategory);
         }
-
-        // Ensure the empty layout indicator is hidden while loading
         if (emptyRecentPane != null) emptyRecentPane.setVisible(false);
 
-        // 1. Clear any old items and instantly drop the ghost shimmer skeletons into the FlowPane
+        // 2. Clear old items and show the skeleton loading animation
         recentItemsContainer.getChildren().clear();
         for (int i = 0; i < 4; i++) {
             recentItemsContainer.getChildren().add(createSkeletonCard());
         }
 
-        // 2. Start the background network thread safely
-        new Thread(() -> {
-            try {
-                Gson gson = new Gson();
-                NetworkMessage request = new NetworkMessage("GET_CATEGORY", targetCategory, true);
+        try {
+            Gson gson = new Gson();
+            NetworkMessage request = new NetworkMessage("GET_CATEGORY", targetCategory, true);
 
-                // Send request over the socket streams
-                UserSession.getOut().println(gson.toJson(request));
-                UserSession.getOut().flush();
+            // Send request over the socket stream
+            UserSession.getOut().println(gson.toJson(request));
+            UserSession.getOut().flush();
 
-                String serverResponse;
-                String cleanData = "";
+            System.out.println(" Sent GET_CATEGORY for: " + targetCategory);
 
-                // Wait for response without locking up the UI thread
-                while ((serverResponse = UserSession.getIn().readLine()) != null) {
-                    NetworkMessage response = gson.fromJson(serverResponse, NetworkMessage.class);
-                    if ("CATEGORY_RESPONSE".equals(response.action)) {
-                        cleanData = response.data;
-                        break;
-                    }
-                }
-
-                final String finalData = cleanData;
-
-                // 3. Once data arrives, jump back onto the FX Application Thread to clear skeletons and show real elements
-                Platform.runLater(() -> {
-                    recentItemsContainer.getChildren().clear();
-
-                    if (finalData == null || finalData.isEmpty() || finalData.equals("NO_ITEMS")) {
-                        if (emptyRecentPane != null) emptyRecentPane.setVisible(true);
-                    } else {
-                        // Call your existing method that parses the JSON and populates your real FXML cards
-                        displayAuctionsOnScreen(finalData);
-                    }
-                });
-
-            } catch (Exception e) {
-                System.err.println("Error reading server stream data inside Browse background thread:");
-                e.printStackTrace();
-
-                // Fallback clean-up UI call if network snaps
-                Platform.runLater(() -> {
-                    recentItemsContainer.getChildren().clear();
-                    if (emptyRecentPane != null) emptyRecentPane.setVisible(true);
-                });
-            }
-        }).start();
+        } catch (Exception e) {
+            System.err.println(" Error sending category request to server:");
+            e.printStackTrace();
+        }
     }
+
     public void displayAuctionsOnScreen(String serverResponse) {
+        liveCards.clear();
+
         recentItemsContainer.getChildren().clear();
+
 
         System.out.println("DEBUG - Raw Server JSON: " + serverResponse);
 
@@ -141,14 +122,21 @@ public class BrowseController {
                     long endTimeMillis = itemObj.get("endTime").getAsLong();
                     double increment = itemObj.get("priceIncrement").getAsDouble();
 
-                    // 4. Convert Base64 String back to a JavaFX Image
+                    // 4. Smart Image Loader (Handles both URLs and Base64)
                     Image fxImage = null;
                     if (base64Image != null && !base64Image.isEmpty()) {
                         try {
-                            byte[] imageBytes = Base64.getDecoder().decode(base64Image);
-                            fxImage = new Image(new ByteArrayInputStream(imageBytes));
+                            if (base64Image.startsWith("http")) {
+                                // 🌟 IT'S A SUPABASE URL!
+                                // The 'true' at the end tells JavaFX to load it in the background so it doesn't freeze your UI
+                                fxImage = new Image(base64Image, true);
+                            } else {
+                                // IT'S BASE64 (Just in case you have older items in the database)
+                                byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                                fxImage = new Image(new ByteArrayInputStream(imageBytes));
+                            }
                         } catch (Exception e) {
-                            System.out.println("Image decode failed for: " + name);
+                            System.out.println("⚠️ Image load failed for: " + name);
                         }
                     }
 
@@ -174,6 +162,9 @@ public class BrowseController {
                     );
 
                     recentItemsContainer.getChildren().add(cardNode);
+                    liveCards.put(id, cardController);
+
+
 
                 } catch (Exception e) {
                     System.out.println("ERROR: Could not process a JSON item!");
@@ -184,6 +175,74 @@ public class BrowseController {
             System.out.println("ERROR: Invalid JSON received from server!");
             e.printStackTrace();
         }
+    }
+
+    public static void startGlobalListener() {
+        if (globalListenerThread != null && globalListenerThread.isAlive()) {
+            return; // Already running! Don't duplicate the mailman.
+        }
+
+        isListening = true;
+
+        globalListenerThread = new Thread(() -> {
+            try {
+                BufferedReader in = UserSession.getIn();
+                String serverMessage;
+
+                while (isListening && (serverMessage = in.readLine()) != null) {
+                    System.out.println("📥 [GLOBAL ROUTER]: Caught -> " + serverMessage);
+
+                    try {
+                        JsonObject packet = JsonParser.parseString(serverMessage).getAsJsonObject();
+                        String action = packet.get("action").getAsString();
+
+                        // Route 1: Live Bid Updates (Pushes new prices directly to live cards)
+                        if (action.equals("LIVE_BID_UPDATE")) {
+                            int incomingAuctionId = packet.get("auctionId").getAsInt();
+                            double newPrice = packet.get("newPrice").getAsDouble();
+
+                            Platform.runLater(() -> {
+                                if (activeBrowseScreen != null && activeBrowseScreen.liveCards.containsKey(incomingAuctionId)) {
+                                    activeBrowseScreen.liveCards.get(incomingAuctionId).updateLivePrice(newPrice);
+                                }
+                            });
+                        }
+                        // Route 2: Category Data (Delivered to Browse Screen)
+                        else if (action.equals("CATEGORY_RESPONSE")) {
+                            String payloadData = packet.get("data").getAsString();
+                            Platform.runLater(() -> {
+                                if (activeBrowseScreen != null) {
+                                    activeBrowseScreen.displayAuctionsOnScreen(payloadData);
+                                }
+                            });
+                        }
+                        // Route 3: My Bids Data (Delivered to MyBids Screen!)
+                        else if (action.equals("MY_BIDS_RESPONSE")) {
+                            String payloadData = packet.get("data").getAsString();
+                            Platform.runLater(() -> {
+                                if (myBidController.activeMyBidsScreen != null) {
+                                    myBidController.activeMyBidsScreen.displayAuctionsOnScreen(payloadData);
+                                    System.out.println("✅ [ROUTER]: Successfully delivered to My Bids screen!");
+                                } else {
+                                    System.out.println("⚠️ [ROUTER WARNING]: Received bids, but My Bids screen is closed.");
+                                }
+                            });
+                        }
+                        else {
+                            System.out.println("⚠️ [ROUTER WARNING]: Unknown action: " + action);
+                        }
+
+                    } catch (Exception parseError) {
+                        System.err.println("❌ [ROUTER ERROR]: Bad packet skipped: " + parseError.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("🔌 [Network] Global Router disconnected.");
+            }
+        });
+
+        globalListenerThread.setDaemon(true);
+        globalListenerThread.start();
     }
 
 
@@ -291,19 +350,20 @@ public class BrowseController {
 
     @FXML
     public void initialize() {
-        // 1. Find out what category they clicked
+        activeBrowseScreen = this;
+        startGlobalListener();
+
         String categoryToLoad = UserSession.getCurrentCategory();
 
-        // 2. Just update the title text! (No networking needed here anymore)
+        // 3. Update the title text
         if (categoryTitleLabel != null) {
             categoryTitleLabel.setText(categoryToLoad + " Auctions");
         }
     }
 
-
-
     @FXML
     public void BackLink(ActionEvent event) {
+
         try {
             // 1. Load the Home screen back into memory
             // NOTE: Change "Home.fxml" to "HomeView.fxml" if that is what your file is named!

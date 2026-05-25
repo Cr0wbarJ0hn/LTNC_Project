@@ -5,13 +5,14 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="875.0" prefWidth="1265.0" spacing="20.0" style="-fx-background-color: #16161f;" styleClass="modern-card" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="1147.0" spacing="20.0" style="-fx-background-color: #16161f;" styleClass="modern-card" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.myAuctionController">
     <padding>
         <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
     </padding>
@@ -51,10 +52,10 @@
         <StackPane VBox.vgrow="ALWAYS">
             <children>
 
-                <ScrollPane fx:id="recentScrollPane" fitToWidth="true" style="-fx-background-color: transparent; -fx-background: #F4F6F9;">
-                    <content>
-                        <VBox fx:id="recentItemsContainer" spacing="15.0" />
-                    </content>
+                <ScrollPane fx:id="myAuctionScrollPane" fitToWidth="true" style="-fx-background-color: transparent; -fx-background: #16161f;">
+               <content>
+                  <FlowPane fx:id="myAuctionFlowPane" hgap="100.0" prefHeight="200.0" prefWidth="1055.0" vgap="35.0" />
+               </content>
                 </ScrollPane>
 
                 <VBox fx:id="emptyRecentPane" alignment="CENTER" prefHeight="169.0" prefWidth="878.0" spacing="15.0">

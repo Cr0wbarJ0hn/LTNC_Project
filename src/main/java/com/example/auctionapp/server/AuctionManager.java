@@ -1,10 +1,14 @@
 package com.example.auctionapp.server;
 
+import com.example.auctionapp.model.AuctionObserver;
 import com.example.auctionapp.model.AuctionSession;
 import com.example.auctionapp.exception.AuctionClosedException;
 import com.example.auctionapp.exception.InvalidBidException;
+import com.example.auctionapp.exception.SelfBiddingException;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,15 +34,48 @@ public class AuctionManager {
         return instance;
     }
 
+    private final List<AuctionObserver> activeClients = new CopyOnWriteArrayList<>();
+    public void registerObserver(AuctionObserver client) {
+        activeClients.add(client);
+    }
+
+    // 🌟 3. Method to Unsubscribe (Detach)
+    public void removeObserver(AuctionObserver client) {
+        activeClients.remove(client);
+    }
+
+
+    private void broadcastPriceUpdate(int auctionId, double newPrice, String highestBidder) {
+        for (AuctionObserver client : activeClients) {
+            client.onBidUpdated(auctionId, newPrice, highestBidder);
+        }
+        System.out.println("📡 [BROADCAST] Sent live update for Auction " + auctionId + " to all clients.");
+    }
+
+
+
+    public void submitBid(int auctionId, String username, double amount)
+            throws AuctionClosedException, InvalidBidException, SelfBiddingException {
+
+        // Look up the active item in the server's running concurrent memory map
+        AuctionSession session = activeAuctions.get(auctionId);
+
+        // If the auction isn't in memory, it has already expired or doesn't exist!
+        if (session == null) {
+            throw new AuctionClosedException("This auction item is no longer active or does not exist!");
+        }
+
+        // Pass the bid details into the individual item's thread lock thread for processing
+        session.processIncomingBid(username, amount);
+        broadcastPriceUpdate(auctionId, session.getCurrentPrice(), session.getHighestBidder());
+    }
+
     // Add an auction to the server's watch list
     public void addActiveAuction(AuctionSession session) {
         activeAuctions.put(session.getAuctionId(), session);
     }
 
-    /**
-     * This background thread runs every 1 second.
-     * It checks all active auctions to see if their time is up.
-     */
+
     private void startAutoCloseWorker() {
         scheduler.scheduleAtFixedRate(() -> {
             LocalDateTime now = LocalDateTime.now();
@@ -60,7 +97,7 @@ public class AuctionManager {
                             " sold to " + session.getHighestBidder() +
                             " for $" + session.getCurrentPrice());
 
-                    // TODO: Notify all connected clients over the socket that this auction is over!
+
                 }
             }
         }, 0, 1, TimeUnit.SECONDS); // Delay 0, repeat every 1 second

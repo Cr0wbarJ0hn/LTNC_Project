@@ -1,5 +1,6 @@
 package com.example.auctionapp.server;
 
+import com.example.auctionapp.model.AuctionSession;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.sql.Connection;
@@ -13,6 +14,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import com.example.auctionapp.exception.AuctionClosedException;
+import com.example.auctionapp.exception.InvalidBidException;
+import com.example.auctionapp.exception.SelfBiddingException;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
@@ -20,6 +24,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
 import java.util.Iterator;
 
 public class DatabaseManager {
@@ -38,6 +43,41 @@ public class DatabaseManager {
             System.err.println("--- CONNECTION FAILED ---");
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public static void initializeActiveAuctionsInMemory() {
+
+        String query = "SELECT id, currentPrice, priceIncrement, endTime, " +
+                "(SELECT bidder FROM bids WHERE auctionId = auctions.id ORDER BY bidAmount DESC LIMIT 1) AS highestBidder " +
+                "FROM auctions WHERE endTime > NOW()";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+
+            int count = 0;
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                double price = rs.getDouble("currentPrice");
+                double increment = rs.getDouble("priceIncrement");
+                java.sql.Timestamp endTs = rs.getTimestamp("endTime");
+                String topBidder = rs.getString("highestBidder");
+
+                LocalDateTime endTime = endTs.toLocalDateTime();
+
+                // Create the session object
+                AuctionSession session = new AuctionSession(id, price, increment, endTime, topBidder);
+
+                // Push it into the manager's memory
+                AuctionManager.getInstance().addActiveAuction(session);
+                count++;
+            }
+            System.out.println(" [SYSTEM] Successfully loaded " + count + " active auctions into server memory.");
+
+        } catch (SQLException e) {
+            System.err.println(" [SYSTEM ERROR] Failed to load active auctions into memory:");
+            e.printStackTrace();
         }
     }
 
@@ -201,62 +241,160 @@ public class DatabaseManager {
         }
     }
 
-    public static String executeSafeBidTransaction(int auctionId, String username, double proposedBid) {
-        // 🌟 SQL STRINGS UPDATED TO MATCH YOUR STANDARDIZED CAMELCASE COLUMNS
-        String query = "SELECT currentPrice, priceIncrement, endTime FROM auctions WHERE id = ?";
-        String update = "UPDATE auctions SET currentPrice = ? WHERE id = ?"; // Removed missing 'last_bidder' link
+    public static void executeSafeBidTransaction(int auctionId, String username, double proposedBid)
+            throws AuctionClosedException, InvalidBidException, SelfBiddingException, SQLException {
+
+        String query = "SELECT currentPrice, priceIncrement, endTime, seller FROM auctions WHERE id = ? FOR UPDATE";
+        String update = "UPDATE auctions SET currentprice = ? WHERE id = ?";
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement checkStmt = conn.prepareStatement(query)) {
+                checkStmt.setInt(1, auctionId);
+
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    if (rs.next()) {
+                        double currentPrice = rs.getDouble("currentPrice");
+                        double increment = rs.getDouble("priceIncrement");
+                        java.sql.Timestamp endTime = rs.getTimestamp("endTime");
+                        String seller = rs.getString("seller");
+
+                        if (endTime.getTime() < System.currentTimeMillis()) {
+                            conn.rollback();
+                            throw new AuctionClosedException("This auction has already ended!");
+                        }
+
+                        if (seller != null && seller.equalsIgnoreCase(username)) {
+                            conn.rollback();
+                            throw new SelfBiddingException("Security Warning: You cannot bid on your own auction item!");
+                        }
+
+                        double minimumRequired = currentPrice + increment;
+                        if (proposedBid < minimumRequired) {
+                            conn.rollback();
+                            throw new InvalidBidException("Bid too low! Minimum required is $" + String.format("%.2f", minimumRequired));
+                        }
+
+                        conn.commit();
+                        return;
+                    } else {
+                        conn.rollback();
+                        throw new InvalidBidException("Auction item target ID not found.");
+                    }
+                }
+            } catch (Exception innerException) {
+                conn.rollback();
+                throw innerException;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
+    public static String fetchAuctionDetailById(int auctionId) {
+        JsonObject auction = new JsonObject();
+
+        // We use a subquery to grab the highest bidder directly from your 'bids' table!
+        String sql = "SELECT a.id, i.itemname, a.startingprice, a.currentprice, " +
+                "i.itemcondition, i.imagepath, i.description, a.seller, " +
+                "a.endtime, a.priceincrement, " +
+                "(SELECT bidder FROM bids WHERE auctionId = a.id ORDER BY bidAmount DESC LIMIT 1) AS leading_bidder " +
+                "FROM auctions a " +
+                "JOIN items i ON a.itemid = i.id " +
+                "WHERE a.id = ?";
 
         try (Connection conn = getConnection();
-             PreparedStatement checkStmt = conn.prepareStatement(query)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            checkStmt.setInt(1, auctionId);
-            try (ResultSet rs = checkStmt.executeQuery()) {
+            stmt.setInt(1, auctionId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    double currentPrice = rs.getDouble("currentPrice");
-                    double increment = rs.getDouble("priceIncrement");
-                    java.sql.Timestamp endTime = rs.getTimestamp("endTime");
+                    auction.addProperty("id", rs.getInt("id"));
+                    auction.addProperty("itemName", rs.getString("itemname"));
+                    auction.addProperty("startingPrice", rs.getDouble("startingprice"));
+                    auction.addProperty("currentPrice", rs.getDouble("currentprice"));
+                    auction.addProperty("itemCondition", rs.getString("itemcondition"));
 
-                    // Validation Rule A: Has the item timeline expired?
-                    if (endTime.getTime() < System.currentTimeMillis()) {
-                        return "This auction has already ended!";
-                    }
+                    String imgPath = rs.getString("imagepath");
+                    auction.addProperty("imagePath", imgPath != null ? imgPath : "");
+                    auction.addProperty("description", rs.getString("description"));
+                    auction.addProperty("seller", rs.getString("seller"));
 
-                    // Validation Rule B: Is the bid higher than minimum increments?
-                    double minimumRequired = currentPrice + increment;
-                    if (proposedBid < minimumRequired) {
-                        return "Bid too low! Minimum required is $" + String.format("%.2f", minimumRequired);
-                    }
+                    java.sql.Timestamp endTimeTs = rs.getTimestamp("endtime");
+                    auction.addProperty("endTime", endTimeTs != null ? endTimeTs.getTime() : 0);
+                    auction.addProperty("priceIncrement", rs.getDouble("priceincrement"));
 
-                    // Validation passed -> Execute database mutation safely
-                    try (PreparedStatement updateStmt = conn.prepareStatement(update)) {
-                        updateStmt.setDouble(1, proposedBid);
-                        updateStmt.setInt(2, auctionId);
+                    // Extract the subquery result safely
+                    String lastBidder = rs.getString("leading_bidder");
+                    auction.addProperty("leadingBidder", lastBidder != null ? lastBidder : "No bids yet");
 
-                        int rowsAffected = updateStmt.executeUpdate();
-                        if (rowsAffected > 0) {
-
-                            // 🌟 OPTIONAL BONUS: Record tracking statistics into your explicit 'bids' historical ledger table!
-                            String logBidSql = "INSERT INTO bids (auctionId, bidder, bidAmount) VALUES (?, ?, ?)";
-                            try (PreparedStatement logStmt = conn.prepareStatement(logBidSql)) {
-                                logStmt.setInt(1, auctionId);
-                                logStmt.setString(2, username);
-                                logStmt.setDouble(3, proposedBid);
-                                logStmt.executeUpdate();
-                            }
-
-                            return "SUCCESS";
-                        }
-                    }
-                } else {
-                    return "Auction item target ID not found.";
+                    return auction.toString();
                 }
             }
         } catch (Exception e) {
+            System.err.println("[DATABASE ERROR] Failed fetching details for auction ID: " + auctionId);
             e.printStackTrace();
-            return "Database transaction failed.";
         }
-        return "Unknown failure.";
+        return null;
     }
+
+    public static String fetchAuctionsByBidder(String username) {
+        JsonArray auctionsArray = new JsonArray();
+
+        // Uses DISTINCT so an item only shows up once, even if the user bid on it 50 times
+        String sql = "SELECT DISTINCT a.id, i.itemname, a.startingprice, a.currentprice, " +
+                "i.itemcondition, i.imagepath, i.description, a.seller, " +
+                "a.endtime, a.priceincrement " +
+                "FROM auctions a " +
+                "JOIN items i ON a.itemid = i.id " +
+                "JOIN bids b ON a.id = b.auctionid " +
+                "WHERE b.bidder = ? " +
+                "ORDER BY a.endtime DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, username);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    JsonObject auction = new JsonObject();
+
+                    auction.addProperty("id", rs.getInt("id"));
+                    auction.addProperty("itemName", rs.getString("itemname"));
+                    auction.addProperty("startingPrice", rs.getDouble("startingprice"));
+                    auction.addProperty("currentPrice", rs.getDouble("currentprice"));
+                    auction.addProperty("itemCondition", rs.getString("itemcondition"));
+
+                    String imgPath = rs.getString("imagepath");
+                    auction.addProperty("imagePath", imgPath != null ? imgPath : "");
+
+                    auction.addProperty("description", rs.getString("description"));
+                    auction.addProperty("seller", rs.getString("seller"));
+
+                    java.sql.Timestamp endTimeTs = rs.getTimestamp("endtime");
+                    long endTimeMillis = (endTimeTs != null) ? endTimeTs.getTime() : 0;
+                    auction.addProperty("endTime", endTimeMillis);
+
+                    auction.addProperty("priceIncrement", rs.getDouble("priceincrement"));
+
+                    auctionsArray.add(auction);
+                }
+            }
+
+            return auctionsArray.size() > 0 ? auctionsArray.toString() : "NO_ITEMS";
+
+        } catch (Exception e) {
+            System.err.println("[DATABASE ERROR] Failed compiling participated bids for user context: " + username);
+            e.printStackTrace();
+            return "NO_ITEMS";
+        }
+    }
+
+
+
     public static boolean closeAuction(int auctionId) {
         String updateSQL = "UPDATE auctions SET active = false WHERE id = ?";
 
@@ -324,8 +462,64 @@ public class DatabaseManager {
         }
         return jsonArray.toString();
     }
+
+    public static String fetchAuctionsBySeller(String sellerName) {
+        JsonArray auctionsArray = new JsonArray();
+
+        // SQL uses standardized lowercase column profiles matching your existing Supabase structure
+        String sql = "SELECT a.id, i.itemname, a.startingprice, a.currentprice, " +
+                "i.itemcondition, i.imagepath, i.description, a.seller, " +
+                "a.endtime, a.priceincrement " +
+                "FROM auctions a " +
+                "JOIN items i ON a.itemid = i.id " +
+                "WHERE a.seller = ? " +
+                "ORDER BY a.endtime DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, sellerName);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    JsonObject auction = new JsonObject();
+
+                    // Pack schema keys exactly as expected by your myAuctionController loop definitions
+                    auction.addProperty("id", rs.getInt("id"));
+                    auction.addProperty("itemName", rs.getString("itemname"));
+                    auction.addProperty("startingPrice", rs.getDouble("startingprice"));
+                    auction.addProperty("currentPrice", rs.getDouble("currentprice"));
+                    auction.addProperty("itemCondition", rs.getString("itemcondition"));
+
+                    String imgPath = rs.getString("imagepath");
+                    auction.addProperty("imagePath", imgPath != null ? imgPath : "");
+
+                    auction.addProperty("description", rs.getString("description"));
+                    auction.addProperty("seller", rs.getString("seller"));
+
+                    // Translate Postgres Timestamps safely into long epochs for your interface timer clocks
+                    java.sql.Timestamp endTimeTs = rs.getTimestamp("endtime");
+                    long endTimeMillis = (endTimeTs != null) ? endTimeTs.getTime() : 0;
+                    auction.addProperty("endTime", endTimeMillis);
+
+                    auction.addProperty("priceIncrement", rs.getDouble("priceincrement"));
+
+                    auctionsArray.add(auction);
+                }
+            }
+
+            return auctionsArray.size() > 0 ? auctionsArray.toString() : "NO_ITEMS";
+
+        } catch (Exception e) {
+            System.err.println("[DATABASE ERROR] Failed compiling hosted auctions for user payload context: " + sellerName);
+            e.printStackTrace();
+            return "NO_ITEMS";
+        }
+    }
+
     public static void insertItemAndAuction(Items item, String seller, double initialPrice, double priceIncrement, java.sql.Timestamp endTime) {
         String insertItemSql = "INSERT INTO items (itemName, itemType, itemCondition, description, imagePath) VALUES (?, ?, ?, ?, ?)";
+        // Ensure table and column casings match your DB schema (PostgreSQL defaults to lower case unless quoted)
         String insertAuctionSql = "INSERT INTO auctions (itemId, seller, startingPrice, currentPrice, priceIncrement, endTime, active) VALUES (?, ?, ?, ?, ?, ?, TRUE)";
 
         try (Connection conn = getConnection()) {
@@ -336,17 +530,14 @@ public class DatabaseManager {
             if (databaseImagePath != null && !databaseImagePath.startsWith("http")) {
                 try {
                     // --- FIX 1: STRIP BASE64 DATA PREFIXES AND WHITESPACE ---
-                    // Removes "data:image/jpeg;base64," if the client appended it
                     if (databaseImagePath.contains(",")) {
                         databaseImagePath = databaseImagePath.substring(databaseImagePath.indexOf(",") + 1);
                     }
-                    // Strip out any accidental spaces or hidden newline characters
                     databaseImagePath = databaseImagePath.replaceAll("\\s", "");
 
                     byte[] imageBytes = java.util.Base64.getDecoder().decode(databaseImagePath);
                     String uniqueFileName = "item_" + System.currentTimeMillis() + ".jpg";
 
-                    // Attempt cloud storage transfer
                     String publicImageUrl = SupabaseStorageManager.uploadImageToBucket(imageBytes, uniqueFileName);
 
                     if (publicImageUrl != null) {
@@ -361,19 +552,21 @@ public class DatabaseManager {
                 }
             }
 
+            // 1. Execute item insertion and fetch its generated key
             PreparedStatement itemStmt = conn.prepareStatement(insertItemSql, Statement.RETURN_GENERATED_KEYS);
             itemStmt.setString(1, item.getName());
             itemStmt.setString(2, item.getType());
             itemStmt.setString(3, item.getCondition());
             itemStmt.setString(4, item.getDescription());
-            itemStmt.setString(5, databaseImagePath); // This will now save the clean URL string
+            itemStmt.setString(5, databaseImagePath);
             itemStmt.executeUpdate();
 
             ResultSet rs = itemStmt.getGeneratedKeys();
             if (rs.next()) {
                 int generatedItemId = rs.getInt(1);
 
-                PreparedStatement auctionStmt = conn.prepareStatement(insertAuctionSql);
+                // 🌟 CHANGE A: Added Statement.RETURN_GENERATED_KEYS here so we can grab the generated auction ID
+                PreparedStatement auctionStmt = conn.prepareStatement(insertAuctionSql, Statement.RETURN_GENERATED_KEYS);
                 auctionStmt.setInt(1, generatedItemId);
                 auctionStmt.setString(2, seller);
                 auctionStmt.setDouble(3, initialPrice);
@@ -382,9 +575,32 @@ public class DatabaseManager {
                 auctionStmt.setTimestamp(6, endTime);
                 auctionStmt.executeUpdate();
 
-                System.out.println("Success: Data saved to Supabase!");
+                // 🌟 CHANGE B: Extract the newly created auction ID and build our live RAM Session
+                ResultSet rsAuction = auctionStmt.getGeneratedKeys();
+                if (rsAuction.next()) {
+                    int generatedAuctionId = rsAuction.getInt(1);
+
+                    // Convert the incoming java.sql.Timestamp cleanly over to java.time.LocalDateTime
+                    LocalDateTime endTimeLocal = endTime.toLocalDateTime();
+
+                    // Instantiate the session matching our system constraints
+                    AuctionSession newSession = new AuctionSession(
+                            generatedAuctionId,
+                            initialPrice,      // Starting price acts as the baseline price
+                            priceIncrement,
+                            endTimeLocal,
+                            null               // Brand new item has no highest bidder yet!
+                    );
+
+                    // 🌟 INJECT DIRECTLY INTO LIVE SERVER MEMORY:
+                    // This makes the item immediately available for bidding across all client sockets!
+                    AuctionManager.getInstance().addActiveAuction(newSession);
+
+                    System.out.println("Success: Data saved to Supabase & synchronized to active server RAM! (Auction ID: " + generatedAuctionId + ")");
+                }
             }
         } catch (SQLException e) {
+            System.err.println(" Database operation failed inside insertItemAndAuction:");
             e.printStackTrace();
         }
     }

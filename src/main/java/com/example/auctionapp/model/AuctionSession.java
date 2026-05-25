@@ -1,8 +1,9 @@
-package com.example.auctionapp.model; // Adjust package name to match your server layout
+package com.example.auctionapp.model;
 
 import com.example.auctionapp.exception.AuctionClosedException;
 import com.example.auctionapp.exception.InvalidBidException;
-import com.example.auctionapp.server.DatabaseManager; // Adjust to your actual DatabaseManager import
+import com.example.auctionapp.exception.SelfBiddingException;
+import com.example.auctionapp.server.DatabaseManager;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,13 +26,11 @@ public class AuctionSession {
         this.highestBidder = highestBidder;
     }
 
-    /**
-     * Thread-safe method to process an incoming bid from a client handler.
-     */
-    public void processIncomingBid(String bidderName, double bidAmount)
-            throws AuctionClosedException, InvalidBidException {
 
-        // 1. Lock the session so no two clients can modify this auction at the exact same millisecond
+    public void processIncomingBid(String bidderName, double bidAmount)
+            throws AuctionClosedException, InvalidBidException, SelfBiddingException {
+
+
         lock.lock();
         try {
             // Check A: Has the auction expired?
@@ -45,21 +44,24 @@ public class AuctionSession {
                 throw new InvalidBidException("Bid is too low! Minimum required is $" + minimumRequiredBid);
             }
 
-            // Check C: Prevent a user from outbidding themselves (Optional business rule)
+
             if (bidderName.equals(highestBidder)) {
                 throw new InvalidBidException("You are already the highest bidder!");
             }
 
-            // 2. If it passes all checks, update the memory values
+            // 🌟 FIX FOR java.sql.SQLException & REMOVED String dbResult
+            // 2. Attempt the database transaction FIRST before changing local server memory values.
+            try {
+                // If this method fails, it will automatically throw an exception matching its rules
+                DatabaseManager.executeSafeBidTransaction(this.auctionId, bidderName, bidAmount);
+            } catch (java.sql.SQLException e) {
+                // Catch the unhandled SQLException and wrap it cleanly so the client handler can print it
+                throw new InvalidBidException("Database synchronization failed: " + e.getMessage());
+            }
+
+            // 🌟 3. Crucial Concurrency Rule: Only change server memory values IF the database approved it!
             this.currentPrice = bidAmount;
             this.highestBidder = bidderName;
-
-            // 3. Write it permanently to Supabase via the DatabaseManager transaction we built earlier
-            String dbResult = DatabaseManager.executeSafeBidTransaction(this.auctionId, bidderName, bidAmount);
-            if (!"SUCCESS".equals(dbResult)) {
-                // Pass the actual database error message (e.g., "Bid too low!") up to the client handler
-                throw new InvalidBidException("Database synchronization failed: " + dbResult);
-            }
 
             System.out.println("Success: " + bidderName + " is now the highest bidder for Auction " + auctionId + " at $" + bidAmount);
 
@@ -73,5 +75,5 @@ public class AuctionSession {
     public int getAuctionId() { return auctionId; }
     public double getCurrentPrice() { return currentPrice; }
     public LocalDateTime getEndTime() { return endTime; }
-    public String getHighestBidder() { return highestBidder; }
+    public String getHighestBidder() { return (highestBidder != null) ? highestBidder : "No bids yet"; }
 }

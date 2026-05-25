@@ -1,11 +1,15 @@
 package com.example.auctionapp.server;
 
+import com.example.auctionapp.model.AuctionObserver;
 import com.example.auctionapp.model.Items;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import com.example.auctionapp.exception.AuctionClosedException;
+import com.example.auctionapp.exception.InvalidBidException;
+import com.example.auctionapp.exception.SelfBiddingException;
 import java.net.Socket;
 import com.google.gson.Gson;
 import com.example.auctionapp.model.NetworkMessage;
@@ -13,7 +17,7 @@ import com.example.auctionapp.model.NetworkMessage;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class ClientHandler implements Runnable {
+public class ClientHandler implements Runnable, AuctionObserver {
     private Socket clientSocket;
     private BufferedReader in;
     private PrintWriter out;
@@ -22,6 +26,7 @@ public class ClientHandler implements Runnable {
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
+        AuctionManager.getInstance().registerObserver(this);
     }
 
     @Override
@@ -44,6 +49,10 @@ public class ClientHandler implements Runnable {
                     case "SUBMIT_AUCTION" -> handleSubmitAuction(request);
                     case "BID" -> handleBid(request);
                     case "GET_CATEGORY" -> handleGetCategory(request);
+                    case "GET_MY_BIDS" -> handleGetMyBids(request);
+                    case "GET_MY_AUCTIONS" -> handleGetMyAuction(request);
+                    case "GET_AUCTION_DETAIL" -> handleGetAuctionDetail(request);
+                    case "LOGOUT" -> handleLogout();
                     default -> sendMessage(gson.toJson(new NetworkMessage("ERROR", "Unknown command", false)));
                 }
             }
@@ -67,6 +76,25 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleGetAuctionDetail(JsonObject request) {
+        try {
+            int targetId = Integer.parseInt(request.get("data").getAsString());
+
+            // Invoke our custom subquery database engine method
+            String jsonPayload = DatabaseManager.fetchAuctionDetailById(targetId);
+
+            String responseData = (jsonPayload != null) ? jsonPayload : "ERROR";
+            sendMessage(gson.toJson(new NetworkMessage("AUCTION_DETAIL_RESPONSE", responseData, true)));
+
+        } catch (Exception e) {
+            System.err.println("[SERVER ERROR] Failed handling incoming detailed view packet query:");
+            e.printStackTrace();
+            sendMessage(gson.toJson(new NetworkMessage("AUCTION_DETAIL_RESPONSE", "ERROR", false)));
+        }
+    }
+
+
+
     private void handleRegister(JsonObject request) {
         String newUsername = request.get("username").getAsString();
         String newPassword = request.get("password").getAsString();
@@ -83,6 +111,21 @@ public class ClientHandler implements Runnable {
         } catch (Exception e) {
             String msg = e.getMessage().toLowerCase().contains("email") ? "Email taken" : "Username taken";
             sendMessage(gson.toJson(new NetworkMessage("REGISTER_ERROR", msg, false)));
+        }
+    }
+
+    private void handleGetMyBids(JsonObject request) {
+        try {
+            String bidderUser = request.get("data").getAsString();
+            String data = DatabaseManager.fetchAuctionsByBidder(bidderUser);
+
+            String response = (data == null || data.isEmpty()) ? "NO_ITEMS" : data;
+            sendMessage(gson.toJson(new NetworkMessage("MY_BIDS_RESPONSE", response, true)));
+
+        } catch (Exception e) {
+            System.err.println("[SERVER ERROR] Exception inside handleGetMyBids:");
+            e.printStackTrace();
+            sendMessage(gson.toJson(new NetworkMessage("MY_BIDS_RESPONSE", "NO_ITEMS", false)));
         }
     }
 
@@ -111,7 +154,7 @@ public class ClientHandler implements Runnable {
 
                     // 4. Upload it using your utility class
 
-                    // TODO: Verify your utility class name is 'SupabaseStorageManager'
+
                     String publicUrl = DatabaseManager.SupabaseStorageManager.uploadImageToBucket(imageBytes, uniqueFileName);
 
                     if (publicUrl != null && !publicUrl.isEmpty()) {
@@ -154,36 +197,69 @@ public class ClientHandler implements Runnable {
         }
     }
 
+
     private void handleBid(JsonObject request) {
-        // 1. Thread safety lock to handle concurrency rules safely across concurrent bidders
-        synchronized (DatabaseManager.class) {
-            try {
-                // 2. Extract the inner string data envelope and decode the parameters
-                String innerJsonData = request.get("data").getAsString();
-                JsonObject bidPayload = JsonParser.parseString(innerJsonData).getAsJsonObject();
+        // 🌟 REMOVED: synchronized (DatabaseManager.class)
+        // Thread safety is now handled elegantly by individual item locks inside AuctionSession
+        // and 'FOR UPDATE' row states in SQL. No more global server-wide bottlenecks!
 
-                int auctionId = bidPayload.get("auctionId").getAsInt();
-                double bidAmount = bidPayload.get("bidAmount").getAsDouble();
+        String bidderName = "Unknown"; // Declared outside try block for visibility in catch scopes
 
-                // Use session username if logged in; fallback to incoming parameter
-                String bidderName = (this.username != null) ? this.username : bidPayload.get("username").getAsString();
+        try {
+            // 1. Extract the inner string data envelope and decode the parameters
+            String innerJsonData = request.get("data").getAsString();
+            JsonObject bidPayload = JsonParser.parseString(innerJsonData).getAsJsonObject();
 
-                // 3. Process the bid via your database logic helper
-                String resultMessage = DatabaseManager.executeSafeBidTransaction(auctionId, bidderName, bidAmount);
+            int auctionId = bidPayload.get("auctionId").getAsInt();
+            double bidAmount = bidPayload.get("bidAmount").getAsDouble();
 
-                if ("SUCCESS".equals(resultMessage)) {
-                    // Success! Return a happy message back down the socket stream
-                    sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Bid accepted successfully!", true)));
-                } else {
-                    // Business rule validation failed (e.g., bid was too low or auction closed)
-                    sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", resultMessage, false)));
-                }
+            // Establish the identity of who is placing this bid
+            bidderName = (this.username != null) ? this.username : bidPayload.get("username").getAsString();
 
-            } catch (Exception e) {
-                System.err.println("[SERVER ERROR] Exception thrown inside handleBid execution thread:");
-                e.printStackTrace();
-                sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Server processing error encountered.", false)));
-            }
+            // 2. 🌟 ROUTE THROUGH THE MANAGER: Route the bid to AuctionManager instead of direct DB mutations
+            // This ensures the server's running active memory and locks are respected!
+            AuctionManager.getInstance().submitBid(auctionId, bidderName, bidAmount);
+
+            // 3. If no exceptions were thrown above, the bid is officially approved!
+            sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Bid accepted successfully!", true)));
+
+        } catch (SelfBiddingException e) {
+            // 🌟 Handle Policy Violation individually
+            System.err.println("⚠️ [POLICY VIOLATION] User '" + bidderName + "' attempted to bid on their own item!");
+            sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", e.getMessage(), false)));
+
+        } catch (AuctionClosedException | InvalidBidException e) {
+            // 🌟 Catch standard operational exceptions and send their specific errors back to the UI
+            sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", e.getMessage(), false)));
+
+        } catch (Exception e) {
+            // Failsafe catch-all block to prevent client-handler threads from crashing unexpectedly
+            System.err.println("[SERVER ERROR] Unexpected exception thrown inside handleBid execution stream:");
+            e.printStackTrace();
+            sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Server processing error encountered.", false)));
+        }
+    }
+
+    private void handleGetMyAuction(JsonObject request) {
+        try {
+            // 1. Extract the target username from the network message payload data field
+            String targetUser = request.get("data").getAsString();
+
+            // 2. Fetch the compiled JSON string dataset from the database manager utility
+            String data = DatabaseManager.fetchAuctionsBySeller(targetUser);
+
+            // 3. Evaluate results. Fall back to "NO_ITEMS" if string context returns blank
+            String response = (data == null || data.isEmpty()) ? "NO_ITEMS" : data;
+
+            // 4. Return serialized packet response back up stream targeting "MY_AUCTIONS_RESPONSE"
+            sendMessage(gson.toJson(new NetworkMessage("MY_AUCTIONS_RESPONSE", response, true)));
+
+        } catch (Exception e) {
+            System.err.println("[SERVER ERROR] Exception processing GET_MY_AUCTIONS execution thread:");
+            e.printStackTrace();
+
+            // Safety line release fallback preventing client deadlocks
+            sendMessage(gson.toJson(new NetworkMessage("MY_AUCTIONS_RESPONSE", "NO_ITEMS", false)));
         }
     }
 
@@ -195,7 +271,34 @@ public class ClientHandler implements Runnable {
         sendMessage(gson.toJson(new NetworkMessage("CATEGORY_RESPONSE", response, true)));
     }
 
+    private void handleLogout() {
+        System.out.println(" [Auth] User logging out: " + this.username);
+
+        // 1. Reset the connection identity state
+        this.username = null;
+
+        // 2. Reply back with a success confirmation envelope
+        sendMessage(gson.toJson(new NetworkMessage("LOGOUT_RESPONSE", "Logged out successfully", true)));
+    }
+
     // --- HELPERS ---
+    @Override
+    public void onBidUpdated(int auctionId, double newPrice, String highestBidder) {
+        try {
+            // Package the live update into a clean JSON envelope
+            JsonObject liveUpdate = new JsonObject();
+            liveUpdate.addProperty("action", "LIVE_BID_UPDATE");
+            liveUpdate.addProperty("auctionId", auctionId);
+            liveUpdate.addProperty("newPrice", newPrice);
+            liveUpdate.addProperty("highestBidder", highestBidder);
+
+            // Push it down the socket to the user's JavaFX screen!
+            sendMessage(liveUpdate.toString());
+
+        } catch (Exception e) {
+            System.err.println(" Failed to send live update to client: " + this.username);
+        }
+    }
 
     public void sendMessage(String message) {
         if (out != null) out.println(message);
@@ -204,6 +307,7 @@ public class ClientHandler implements Runnable {
     private void closeConnection() {
         try {
             AuctionServer.activeClients.remove(this);
+            AuctionManager.getInstance().removeObserver(this);
             if (clientSocket != null) clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();

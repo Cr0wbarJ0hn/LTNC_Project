@@ -1,9 +1,11 @@
 package com.example.auctionapp.controller;
 
+import com.example.auctionapp.model.UserSession;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Hyperlink;
+import com.example.auctionapp.controller.BrowseController;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
@@ -18,9 +20,6 @@ import javafx.scene.transform.Scale;
 
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.scene.Node;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,6 +31,7 @@ public class DashboardController {
     public DashboardController() {
         instance = this;
     }
+
 
     // 3. Allow anyone in the app to grab the Dashboard!
     public static DashboardController getInstance() {
@@ -68,6 +68,9 @@ public class DashboardController {
     private String currentImagePath = "";
     @FXML
     public void sellItem() {
+
+
+
         // This makes the right panel invisible AND removes its reserved space!
         rightPane.setVisible(false);
         rightPane.setManaged(false);
@@ -97,6 +100,7 @@ public class DashboardController {
 
     @FXML
     public void loadMyauction() {
+
         // Bring the right pane back when returning to Home/Browse!
         rightPane.setVisible(true);
         rightPane.setManaged(true);
@@ -124,6 +128,7 @@ public class DashboardController {
 
     @FXML
     public void loadNotif() {
+
         rightPane.setVisible(true);
         rightPane.setManaged(true);
         try {
@@ -150,6 +155,7 @@ public class DashboardController {
 
     @FXML
     public void loadMyBids() {
+
         // Bring the right pane back when returning to Home/Browse!
         rightPane.setVisible(true);
         rightPane.setManaged(true);
@@ -177,6 +183,7 @@ public class DashboardController {
 
     @FXML
     public void loadHomeView() {
+
 
         rightPane.setVisible(true);
         rightPane.setManaged(true);        try {
@@ -212,9 +219,6 @@ public class DashboardController {
 
     @FXML
     public void initialize() {
-
-
-
         Platform.runLater(() -> {
             Scene scene = mainContent.getScene();
             if (scene != null) {
@@ -382,6 +386,7 @@ public class DashboardController {
     }
     @FXML
     public void loadDetailedBidScreen() {
+
         try {
             // 1. Load the DetailedBid FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/DetailBid.fxml"));

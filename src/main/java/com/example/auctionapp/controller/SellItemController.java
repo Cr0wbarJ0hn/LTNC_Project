@@ -43,11 +43,13 @@ public class SellItemController {
     // --- Memory Variables ---
     // Remembers the file the user chose so it can be sent to the database
     private File selectedImageFile;
+    public static SellItemController activeSellScreen = null;
     // Remembers the default placeholder image so we can restore it after submitting
     private Image defaultPlaceholderImage;
 
     @FXML
     public void initialize() {
+        activeSellScreen = this;
         conditionComboBox.getItems().addAll(
                 "New",
                 "Like New",
@@ -141,14 +143,12 @@ public class SellItemController {
                         .toInstant()
                         .toEpochMilli();
 
-                // --- NEW CODE STARTS HERE ---
                 // Convert the image file to a Base64 String before sending
                 String imageString = "";
                 if (selectedImageFile != null) {
                     byte[] fileContent = Files.readAllBytes(selectedImageFile.toPath());
                     imageString = Base64.getEncoder().encodeToString(fileContent);
                 }
-
 
                 // 4. CREATE JSON DATA (Clean & Professional)
                 Gson gson = new Gson();
@@ -158,59 +158,54 @@ public class SellItemController {
                 auctionReq.addProperty("itemType", category);
                 auctionReq.addProperty("itemCondition", condition);
                 auctionReq.addProperty("description", itemDescription);
-
-                // --- CHANGED THIS LINE ---
-                // We now send the giant Base64 string instead of the local computer path
                 auctionReq.addProperty("imagePath", imageString);
-
                 auctionReq.addProperty("seller", UserSession.getUsername());
                 auctionReq.addProperty("price", initialPrice);
                 auctionReq.addProperty("increment", priceIncrement);
                 auctionReq.addProperty("endTime", timeInMillis);
 
-                // 5. SEND TO SERVER
+                // 5. SEND TO SERVER AND STOP! 🛑
                 PrintWriter out = UserSession.getOut();
-                java.io.BufferedReader in = UserSession.getIn();
-
-                if (out != null && in != null) {
+                if (out != null) {
                     out.println(gson.toJson(auctionReq));
                     out.flush();
-
-                    // Wait for JSON response
-                    String responseStr = in.readLine();
-                    NetworkMessage response = gson.fromJson(responseStr, NetworkMessage.class);
-
-
-                    Platform.runLater(() -> {
-
-                        submitButton.setDisable(false);
-                        submitButton.setText("Submit");
-
-                        if (response.success) {
-                            clearForm(); // Helper method to wipe fields
-                            ErrorTextField3.setText("Successfully created your auction!");
-                            ErrorTextField3.setStyle("-fx-text-fill: green;");
-
-                        } else {
-                            ErrorTextField.setText("Server Error: " + response.data);
-                            ErrorTextField.setStyle("-fx-text-fill: red;");
-                        }
-                    });
+                    System.out.println("📤 [Submit Auction]: Sent to server. Waiting for router...");
+                    // Notice there is NO in.readLine() here anymore!
                 }
 
             } catch (NumberFormatException e) {
                 Platform.runLater(() -> {
                     ErrorTextField.setText("Please enter valid numbers for the prices!");
                     ErrorTextField.setStyle("-fx-text-fill: red;");
+                    submitButton.setDisable(false);
+                    submitButton.setText("Submit");
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     ErrorTextField.setText("Network error: Could not reach server.");
                     ErrorTextField.setStyle("-fx-text-fill: red;");
+                    submitButton.setDisable(false);
+                    submitButton.setText("Submit");
                 });
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    // 🌟 THE ROUTER HAND-OFF TARGET
+    public void handleSubmitResponse(boolean success, String serverMessage) {
+        // We don't need Platform.runLater here because the Global Router already uses it!
+        submitButton.setDisable(false);
+        submitButton.setText("Submit");
+
+        if (success) {
+            clearForm(); // Wipe fields
+            ErrorTextField3.setText("Successfully created your auction!");
+            ErrorTextField3.setStyle("-fx-text-fill: green;");
+        } else {
+            ErrorTextField.setText("Server Error: " + serverMessage);
+            ErrorTextField.setStyle("-fx-text-fill: red;");
+        }
     }
 
     // Helper method to keep your code clean

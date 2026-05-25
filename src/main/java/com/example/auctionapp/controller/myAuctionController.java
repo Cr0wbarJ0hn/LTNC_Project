@@ -26,6 +26,7 @@ public class myAuctionController {
     private DashboardController mainDashboard;
 
     @FXML private Label greetingLabel;
+    public static myAuctionController activeMyAuctionsScreen = null;
 
     @FXML private ScrollPane myAuctionScrollPane;
     @FXML private FlowPane myAuctionFlowPane;
@@ -37,78 +38,47 @@ public class myAuctionController {
 
     @FXML
     public void initialize() {
+        activeMyAuctionsScreen = this;
         // Automatically start fetching the logged-in user's auctions on load
         fetchHostedAuctions();
     }
 
     public void fetchHostedAuctions() {
-        // Resolve the logged-in user's username context
+        // 1. Resolve the logged-in user's username context
         String currentUsername = UserSession.getUsername();
 
         if (greetingLabel != null && currentUsername != null) {
             greetingLabel.setText("See all the auctions you held here, " + currentUsername);
         }
 
-        // Ensure the empty layout indicator is hidden while loading
+        // 2. Set up the UI for loading (Hide empty state, show skeletons)
         if (emptyRecentPane != null) emptyRecentPane.setVisible(false);
         if (myAuctionScrollPane != null) myAuctionScrollPane.setVisible(true);
 
-        // 1. Clear old elements and drop ghost shimmer skeletons into the FlowPane
         myAuctionFlowPane.getChildren().clear();
         for (int i = 0; i < 4; i++) {
             myAuctionFlowPane.getChildren().add(createSkeletonCard());
         }
 
-        // 2. Start the background network thread safely (Identical to BrowseController)
-        new Thread(() -> {
-            try {
-                Gson gson = new Gson();
-                // Network query action customized to pull items hosted by the user
-                NetworkMessage request = new NetworkMessage("GET_MY_AUCTIONS", currentUsername, true);
+        // 3. ONLY SEND THE REQUEST. No background threads, no readLine()!
+        try {
+            Gson gson = new Gson();
+            NetworkMessage request = new NetworkMessage("GET_MY_AUCTIONS", currentUsername, true);
 
-                // Send request over the socket streams
-                UserSession.getOut().println(gson.toJson(request));
-                UserSession.getOut().flush();
+            // Send request over the socket stream
+            UserSession.getOut().println(gson.toJson(request));
+            UserSession.getOut().flush();
 
-                String serverResponse;
-                String cleanData = "";
+            System.out.println("📤 [My Auctions]: Request sent to server. Waiting for Global Router to deliver response...");
 
-                // Wait for response block without freezing the primary JavaFX app interface
-                while ((serverResponse = UserSession.getIn().readLine()) != null) {
-                    NetworkMessage response = gson.fromJson(serverResponse, NetworkMessage.class);
-                    if ("MY_AUCTIONS_RESPONSE".equals(response.action)) {
-                        cleanData = response.data;
-                        break;
-                    }
-                }
-
-                final String finalData = cleanData;
-
-                // 3. Jump back onto the UI thread to switch skeletons out for real item nodes
-                Platform.runLater(() -> {
-                    myAuctionFlowPane.getChildren().clear();
-
-                    if (finalData == null || finalData.isEmpty() || finalData.equals("NO_ITEMS")) {
-                        if (emptyRecentPane != null) emptyRecentPane.setVisible(true);
-                        if (myAuctionScrollPane != null) myAuctionScrollPane.setVisible(false);
-                    } else {
-                        displayAuctionsOnScreen(finalData);
-                    }
-                });
-
-            } catch (Exception e) {
-                System.err.println("Error reading server stream data inside myAuction background thread:");
-                e.printStackTrace();
-
-                // Fallback UI safety clear if connections drop
-                Platform.runLater(() -> {
-                    myAuctionFlowPane.getChildren().clear();
-                    if (emptyRecentPane != null) emptyRecentPane.setVisible(true);
-                    if (myAuctionScrollPane != null) myAuctionScrollPane.setVisible(false);
-                });
-            }
-        }).start();
+        } catch (Exception e) {
+            System.err.println("Error sending request:");
+            e.printStackTrace();
+        }
     }
+
+    // 🌟 THE ROUTER HAND-OFF TARGET
+
 
 
 

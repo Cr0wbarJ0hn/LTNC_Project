@@ -66,12 +66,18 @@ public class SignUpController {
         messageLabel2.setStyle("-fx-text-fill: blue;");
 
         // 2. START BACKGROUND THREAD
+        // 2. START BACKGROUND THREAD
         new Thread(() -> {
+            // Declare network resources outside try so they are accessible to the finally block
+            Socket socket = null;
+            PrintWriter out = null;
+            BufferedReader in = null;
+
             try {
                 // Dial the Server
-                Socket socket = new Socket("localhost", 5000);
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                socket = new Socket("localhost", 5000);
+                out = new PrintWriter(socket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                 // Create JSON Request
                 Gson gson = new Gson();
@@ -98,16 +104,14 @@ public class SignUpController {
                         messageLabel2.setText("Account created! You can now log in.");
                         messageLabel2.setStyle("-fx-text-fill: green;");
 
-                        // Clear the boxes so it looks nice
+                        // Clear the boxes
                         signupFullname.clear();
                         signupPhonenumber.clear();
                         signupUserName.clear();
                         signupEmail.clear();
                         signupPassword.clear();
                     } else {
-                        // In the new server code, the exact error (e.g. "Email already taken.") is stored in response.data
                         String errorMessage = response.data;
-
                         if (errorMessage.contains("Email")) {
                             messageLabel.setText(errorMessage);
                             signupEmail.setStyle("-fx-border-color: red;");
@@ -130,6 +134,16 @@ public class SignUpController {
                     messageLabel2.setStyle("-fx-text-fill: red;");
                 });
                 e.printStackTrace();
+            } finally {
+                // 🌟 THE FIX: Always guarantee clean destruction of temporary lines!
+                try {
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    if (socket != null) socket.close();
+                    System.out.println(" Cleaned up temporary registration socket lines.");
+                } catch (Exception cleanEx) {
+                    cleanEx.printStackTrace();
+                }
             }
         }).start(); // Don't forget to start the thread!
     }

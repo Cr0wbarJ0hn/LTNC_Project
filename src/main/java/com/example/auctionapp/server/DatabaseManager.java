@@ -260,6 +260,7 @@ public class DatabaseManager {
                         java.sql.Timestamp endTime = rs.getTimestamp("endTime");
                         String seller = rs.getString("seller");
 
+                        // 1. Validation Bouncers
                         if (endTime.getTime() < System.currentTimeMillis()) {
                             conn.rollback();
                             throw new AuctionClosedException("This auction has already ended!");
@@ -276,8 +277,18 @@ public class DatabaseManager {
                             throw new InvalidBidException("Bid too low! Minimum required is $" + String.format("%.2f", minimumRequired));
                         }
 
+                        // 🌟 2. THE FIX: Actually execute the update statement!
+                        try (PreparedStatement updateStmt = conn.prepareStatement(update)) {
+                            updateStmt.setDouble(1, proposedBid);  // Put the new bid price into the first '?'
+                            updateStmt.setInt(2, auctionId);       // Put the auction ID into the second '?'
+                            updateStmt.executeUpdate();            // Push it to the database table!
+                            System.out.println("💾 [DB SUCCESS]: Written to disk. New price: " + proposedBid);
+                        }
+
+                        // 3. Commit the transaction safely now that the update ran
                         conn.commit();
                         return;
+
                     } else {
                         conn.rollback();
                         throw new InvalidBidException("Auction item target ID not found.");
@@ -291,7 +302,6 @@ public class DatabaseManager {
             }
         }
     }
-
     public static String fetchAuctionDetailById(int auctionId) {
         JsonObject auction = new JsonObject();
 

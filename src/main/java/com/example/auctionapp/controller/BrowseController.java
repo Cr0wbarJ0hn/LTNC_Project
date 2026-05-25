@@ -200,10 +200,20 @@ public class BrowseController {
                         if (action.equals("LIVE_BID_UPDATE")) {
                             int incomingAuctionId = packet.get("auctionId").getAsInt();
                             double newPrice = packet.get("newPrice").getAsDouble();
+                            // Safely grab the highest bidder if the server sent it
+                            String highestBidder = packet.has("highestBidder") ? packet.get("highestBidder").getAsString() : "";
 
                             Platform.runLater(() -> {
+                                // 1. Update the Browse Screen card if it exists
                                 if (activeBrowseScreen != null && activeBrowseScreen.liveCards.containsKey(incomingAuctionId)) {
                                     activeBrowseScreen.liveCards.get(incomingAuctionId).updateLivePrice(newPrice);
+                                }
+
+                                // 🌟 2. Update the Detailed Screen using your newly created method!
+                                if (DetailedBidController.activeDetailBidsScreen != null &&
+                                        DetailedBidController.activeDetailBidsScreen.getCurrentAuctionId() == incomingAuctionId) {
+
+                                    DetailedBidController.activeDetailBidsScreen.handleRealtimePriceBroadcast(newPrice, highestBidder);
                                 }
                             });
                         }
@@ -216,7 +226,6 @@ public class BrowseController {
                                 }
                             });
                         }
-                        // Route 3: My Bids Data (Delivered to MyBids Screen!)
                         else if (action.equals("MY_BIDS_RESPONSE")) {
                             String payloadData = packet.get("data").getAsString();
                             Platform.runLater(() -> {
@@ -225,6 +234,55 @@ public class BrowseController {
                                     System.out.println("✅ [ROUTER]: Successfully delivered to My Bids screen!");
                                 } else {
                                     System.out.println("⚠️ [ROUTER WARNING]: Received bids, but My Bids screen is closed.");
+                                }
+                            });
+                        }
+                        else if (action.equals("MY_AUCTIONS_RESPONSE")) {
+                            String payloadData = packet.get("data").getAsString();
+                            Platform.runLater(() -> {
+                                // Make sure your MyAuctionsController has the static active variable we set up!
+                                if (myAuctionController.activeMyAuctionsScreen != null) {
+                                    myAuctionController.activeMyAuctionsScreen.displayAuctionsOnScreen(payloadData);
+                                    System.out.println("✅ [ROUTER]: Successfully delivered to My Auctions screen!");
+                                } else {
+                                    System.out.println("⚠️ [ROUTER WARNING]: Received auctions, but My Auctions screen is closed.");
+                                }
+                            });
+                        }
+                        else if (action.equals("AUCTION_DETAIL_RESPONSE")) {
+                            String payloadData = packet.get("data").getAsString();
+                            Platform.runLater(() -> {
+                                if (DetailedBidController.activeDetailBidsScreen != null) {
+                                    DetailedBidController.activeDetailBidsScreen.handleAuctionDetailResponse(payloadData);
+                                    System.out.println("✅ [ROUTER]: Initial stats loaded on Detailed Screen.");
+                                }
+                            });
+                        }
+                        else if (action.equals("SUBMIT_AUCTION_RESPONSE")) {
+                            boolean success = packet.get("success").getAsBoolean();
+                            String message = packet.has("data") ? packet.get("data").getAsString() : "";
+
+                            Platform.runLater(() -> {
+                                if (SellItemController.activeSellScreen != null) {
+                                    SellItemController.activeSellScreen.handleSubmitResponse(success, message);
+                                }
+                            });
+                        }
+                        else if (action.equals("BID_RESPONSE")) {
+                            boolean success = packet.get("success").getAsBoolean();
+                            // Handle cases where error payloads are packed inside data vs message properties
+                            String message = packet.has("data") ? packet.get("data").getAsString() : "";
+                            if(packet.has("message")) message = packet.get("message").getAsString();
+                            double bidAmount = 0.0;
+                            if(packet.has("bidAmount")) bidAmount = packet.get("bidAmount").getAsDouble();
+
+                            final String finalMsg = message;
+                            final double finalAmount = bidAmount;
+
+                            Platform.runLater(() -> {
+                                if (DetailedBidController.activeDetailBidsScreen != null) {
+                                    DetailedBidController.activeDetailBidsScreen.handleBidResponse(success, finalMsg, finalAmount);
+                                    System.out.println("✅ [ROUTER]: Bid transaction confirmation delivered to Detailed Screen.");
                                 }
                             });
                         }

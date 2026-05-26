@@ -23,6 +23,8 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 
+import static com.example.auctionapp.model.UserSession.cleanUserSession;
+
 public class HomeController {
     @FXML private Label welcomeLabel;
     @FXML private StackPane furnitureCard;
@@ -153,6 +155,7 @@ public class HomeController {
 
     @FXML
     public void handleLogoutAction(ActionEvent event) {
+        cleanUserSession();
         try {
             // 1. Retrieve the network pipeline we saved during login
             java.io.PrintWriter out = UserSession.getOut();

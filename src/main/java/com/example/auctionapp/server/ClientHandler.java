@@ -116,16 +116,25 @@ public class ClientHandler implements Runnable, AuctionObserver {
 
     private void handleGetMyBids(JsonObject request) {
         try {
-            String bidderUser = request.get("data").getAsString();
+            // 🌟 FIX 1: Safely handle both payload styles (depending on if client sent "data" or "username")
+            String bidderUser = "";
+            if (request.has("data")) {
+                bidderUser = request.get("data").getAsString();
+            } else if (request.has("username")) {
+                bidderUser = request.get("username").getAsString();
+            }
+
             String data = DatabaseManager.fetchAuctionsByBidder(bidderUser);
 
-            String response = (data == null || data.isEmpty()) ? "NO_ITEMS" : data;
+            // 🌟 FIX 2: Return "[]" (Empty JSON Array) instead of "NO_ITEMS" so the client parser doesn't crash!
+            String response = (data == null || data.isEmpty()) ? "[]" : data;
             sendMessage(gson.toJson(new NetworkMessage("MY_BIDS_RESPONSE", response, true)));
 
         } catch (Exception e) {
             System.err.println("[SERVER ERROR] Exception inside handleGetMyBids:");
             e.printStackTrace();
-            sendMessage(gson.toJson(new NetworkMessage("MY_BIDS_RESPONSE", "NO_ITEMS", false)));
+            // Send an empty array on error to safely clear the skeletons
+            sendMessage(gson.toJson(new NetworkMessage("MY_BIDS_RESPONSE", "[]", false)));
         }
     }
 
@@ -189,11 +198,15 @@ public class ClientHandler implements Runnable, AuctionObserver {
                     new java.sql.Timestamp(request.get("endTime").getAsLong())
             );
 
-            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_SUCCESS", "Posted!", true)));
+            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_AUCTION_RESPONSE", "Posted!", true)));
+            System.out.println("✨ [SERVER]: Successfully inserted auction and sent confirmation to client.");
+
         } catch (Exception e) {
             System.err.println("[SERVER ERROR] Error handling SUBMIT_AUCTION request:");
             e.printStackTrace();
-            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_ERROR", "Server error.", false)));
+
+            // 🌟 FIX: Change "SUBMIT_ERROR" to "SUBMIT_AUCTION_RESPONSE" so errors unlock the UI too!
+            sendMessage(gson.toJson(new NetworkMessage("SUBMIT_AUCTION_RESPONSE", "Server error: " + e.getMessage(), false)));
         }
     }
 
@@ -242,24 +255,24 @@ public class ClientHandler implements Runnable, AuctionObserver {
 
     private void handleGetMyAuction(JsonObject request) {
         try {
-            // 1. Extract the target username from the network message payload data field
-            String targetUser = request.get("data").getAsString();
+            // 🌟 FIX 1: Safe payload extraction
+            String targetUser = "";
+            if (request.has("data")) {
+                targetUser = request.get("data").getAsString();
+            } else if (request.has("username")) {
+                targetUser = request.get("username").getAsString();
+            }
 
-            // 2. Fetch the compiled JSON string dataset from the database manager utility
             String data = DatabaseManager.fetchAuctionsBySeller(targetUser);
 
-            // 3. Evaluate results. Fall back to "NO_ITEMS" if string context returns blank
-            String response = (data == null || data.isEmpty()) ? "NO_ITEMS" : data;
-
-            // 4. Return serialized packet response back up stream targeting "MY_AUCTIONS_RESPONSE"
+            // 🌟 FIX 2: Empty JSON Array fallback
+            String response = (data == null || data.isEmpty()) ? "[]" : data;
             sendMessage(gson.toJson(new NetworkMessage("MY_AUCTIONS_RESPONSE", response, true)));
 
         } catch (Exception e) {
             System.err.println("[SERVER ERROR] Exception processing GET_MY_AUCTIONS execution thread:");
             e.printStackTrace();
-
-            // Safety line release fallback preventing client deadlocks
-            sendMessage(gson.toJson(new NetworkMessage("MY_AUCTIONS_RESPONSE", "NO_ITEMS", false)));
+            sendMessage(gson.toJson(new NetworkMessage("MY_AUCTIONS_RESPONSE", "[]", false)));
         }
     }
 

@@ -244,8 +244,12 @@ public class DatabaseManager {
     public static void executeSafeBidTransaction(int auctionId, String username, double proposedBid)
             throws AuctionClosedException, InvalidBidException, SelfBiddingException, SQLException {
 
+        // 🌟 DIAGNOSIS CHECK: Ensure column name case matches your SQL schema (e.g., currentPrice vs currentprice)
         String query = "SELECT currentPrice, priceIncrement, endTime, seller FROM auctions WHERE id = ? FOR UPDATE";
-        String update = "UPDATE auctions SET currentprice = ? WHERE id = ?";
+        String update = "UPDATE auctions SET currentPrice = ?, last_bidder = ? WHERE id = ?";
+        String insertBid = "INSERT INTO bids (auctionid, bidder, bidamount) VALUES (?, ?, ?)";
+
+        System.out.println("🔍 [DB TRACE]: Starting transaction for Auction ID: " + auctionId + " by User: " + username);
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
@@ -260,41 +264,61 @@ public class DatabaseManager {
                         java.sql.Timestamp endTime = rs.getTimestamp("endTime");
                         String seller = rs.getString("seller");
 
-                        // 1. Validation Bouncers
                         if (endTime.getTime() < System.currentTimeMillis()) {
+                            System.out.println(" [DB TRACE]: Rolled back - Auction expired.");
                             conn.rollback();
                             throw new AuctionClosedException("This auction has already ended!");
                         }
 
                         if (seller != null && seller.equalsIgnoreCase(username)) {
+                            System.out.println(" [DB TRACE]: Rolled back - Self bidding attempt.");
                             conn.rollback();
                             throw new SelfBiddingException("Security Warning: You cannot bid on your own auction item!");
                         }
 
                         double minimumRequired = currentPrice + increment;
                         if (proposedBid < minimumRequired) {
+                            System.out.println(" [DB TRACE]: Rolled back - Bid too low (" + proposedBid + " < " + minimumRequired + ")");
                             conn.rollback();
                             throw new InvalidBidException("Bid too low! Minimum required is $" + String.format("%.2f", minimumRequired));
                         }
 
-                        // 🌟 2. THE FIX: Actually execute the update statement!
+                        // 🌟 THE ACID TEST: Let's see if the database actually modifies rows!
                         try (PreparedStatement updateStmt = conn.prepareStatement(update)) {
-                            updateStmt.setDouble(1, proposedBid);  // Put the new bid price into the first '?'
-                            updateStmt.setInt(2, auctionId);       // Put the auction ID into the second '?'
-                            updateStmt.executeUpdate();            // Push it to the database table!
-                            System.out.println("💾 [DB SUCCESS]: Written to disk. New price: " + proposedBid);
+                            // Parameter 1: The first '?' (currentPrice)
+                            updateStmt.setDouble(1, proposedBid);
+
+                            // Parameter 2: The second '?' (highestBidder)
+                            updateStmt.setString(2, username);
+
+                            // 🌟 Parameter 3: The third '?' (id) - THIS IS THE ONE YOU ARE MISSING!
+                            updateStmt.setInt(3, auctionId);
+
+                            int rowsAffected = updateStmt.executeUpdate();
+                            System.out.println("🚀 [DB TRACE]: Rows affected: " + rowsAffected);
+                        }
+                        try (PreparedStatement insertStmt = conn.prepareStatement(insertBid)) {
+                            insertStmt.setInt(1, auctionId);
+                            insertStmt.setString(2, username);
+                            insertStmt.setDouble(3, proposedBid);
+                            int bidRowsAffected = insertStmt.executeUpdate();
+                            System.out.println("📝 [DB TRACE]: Bids table rows inserted: " + bidRowsAffected);
                         }
 
-                        // 3. Commit the transaction safely now that the update ran
+                        // Force commit to disk immediately
                         conn.commit();
+                        System.out.println(" [DB TRACE]: conn.commit() completed successfully for price: " + proposedBid);
                         return;
 
                     } else {
+                        System.out.println(" [DB TRACE]: Rolled back - Auction item target ID " + auctionId + " not found.");
                         conn.rollback();
                         throw new InvalidBidException("Auction item target ID not found.");
                     }
                 }
             } catch (Exception innerException) {
+                System.err.println(" [DB CRITICAL ERROR]: Exception caught inside block: " + innerException.getMessage());
+                innerException.printStackTrace();
                 conn.rollback();
                 throw innerException;
             } finally {

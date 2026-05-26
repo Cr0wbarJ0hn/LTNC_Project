@@ -54,7 +54,10 @@
 
                 <ScrollPane fx:id="myAuctionScrollPane" fitToWidth="true" style="-fx-background-color: transparent; -fx-background: #16161f;">
                <content>
-                  <FlowPane fx:id="myAuctionFlowPane" hgap="100.0" prefHeight="200.0" prefWidth="1055.0" vgap="35.0" />
+                  <FlowPane fx:id="myAuctionFlowPane" hgap="100.0" prefHeight="200.0" prefWidth="1055.0" vgap="40.0">
+                     <padding>
+                        <Insets bottom="20.0" left="10.0" right="10.0" top="10.0" />
+                     </padding></FlowPane>
                </content>
                 </ScrollPane>
 

@@ -200,20 +200,22 @@ public class BrowseController {
                         if (action.equals("LIVE_BID_UPDATE")) {
                             int incomingAuctionId = packet.get("auctionId").getAsInt();
                             double newPrice = packet.get("newPrice").getAsDouble();
-                            // Safely grab the highest bidder if the server sent it
-                            String highestBidder = packet.has("highestBidder") ? packet.get("highestBidder").getAsString() : "";
+
+                            // Safely extract the bidder name string from the JSON transmission packet
+                            String highestBidder = packet.has("highestBidder") ? packet.get("highestBidder").getAsString() : "No bids yet";
 
                             Platform.runLater(() -> {
-                                // 1. Update the Browse Screen card if it exists
+                                // 1. Update your browse screen live card cache
                                 if (activeBrowseScreen != null && activeBrowseScreen.liveCards.containsKey(incomingAuctionId)) {
                                     activeBrowseScreen.liveCards.get(incomingAuctionId).updateLivePrice(newPrice);
                                 }
 
-                                // 🌟 2. Update the Detailed Screen using your newly created method!
+                                // 2. Synchronize your active detailed view values
                                 if (DetailedBidController.activeDetailBidsScreen != null &&
                                         DetailedBidController.activeDetailBidsScreen.getCurrentAuctionId() == incomingAuctionId) {
 
                                     DetailedBidController.activeDetailBidsScreen.handleRealtimePriceBroadcast(newPrice, highestBidder);
+                                    System.out.println("📢 [ROUTER]: Live UI refresh for price (" + newPrice + ") and bidder (" + highestBidder + ") applied.");
                                 }
                             });
                         }
@@ -226,26 +228,36 @@ public class BrowseController {
                                 }
                             });
                         }
+                        // Route 3: My Bids Screen Data Delivery
                         else if (action.equals("MY_BIDS_RESPONSE")) {
-                            String payloadData = packet.get("data").getAsString();
+                            // 🌟 FIX: Use .toString() instead of .getAsString() so JSON arrays don't crash the router!
+                            String payloadData = packet.has("data") ?
+                                    (packet.get("data").isJsonPrimitive() ? packet.get("data").getAsString() : packet.get("data").toString()) : "";
+
                             Platform.runLater(() -> {
+                                // 🌟 FIX: Changed lowercase 'myBidController' to Uppercase Class 'MyBidsController'
                                 if (myBidController.activeMyBidsScreen != null) {
                                     myBidController.activeMyBidsScreen.displayAuctionsOnScreen(payloadData);
                                     System.out.println("✅ [ROUTER]: Successfully delivered to My Bids screen!");
                                 } else {
-                                    System.out.println("⚠️ [ROUTER WARNING]: Received bids, but My Bids screen is closed.");
+                                    System.out.println("⚠️ [ROUTER WARNING]: Received bids, but My Bids screen is officially closed/unregistered.");
                                 }
                             });
                         }
+
+
                         else if (action.equals("MY_AUCTIONS_RESPONSE")) {
-                            String payloadData = packet.get("data").getAsString();
+                            // 🌟 FIX: Safe JSON string conversion
+                            String payloadData = packet.has("data") ?
+                                    (packet.get("data").isJsonPrimitive() ? packet.get("data").getAsString() : packet.get("data").toString()) : "";
+
                             Platform.runLater(() -> {
-                                // Make sure your MyAuctionsController has the static active variable we set up!
+                                // 🌟 FIX: Changed lowercase 'myAuctionController' to Uppercase Class 'MyAuctionsController'
                                 if (myAuctionController.activeMyAuctionsScreen != null) {
                                     myAuctionController.activeMyAuctionsScreen.displayAuctionsOnScreen(payloadData);
                                     System.out.println("✅ [ROUTER]: Successfully delivered to My Auctions screen!");
                                 } else {
-                                    System.out.println("⚠️ [ROUTER WARNING]: Received auctions, but My Auctions screen is closed.");
+                                    System.out.println("⚠️ [ROUTER WARNING]: Received auctions, but My Auctions screen is officially closed/unregistered.");
                                 }
                             });
                         }

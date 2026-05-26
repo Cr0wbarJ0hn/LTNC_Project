@@ -172,14 +172,18 @@ public class DetailedBidController {
     }
 
     // 🌟 NEW METHOD: Called by Global Router when this specific user bids manually
+    // Inside DetailedBidController.java
+
     public void handleBidResponse(boolean success, String serverMessage, double attemptedAmount) {
         if (success) {
-            DetailPrice.setText("$" + String.format("%.2f", attemptedAmount));
-            leadingBidder.setText(UserSession.getUsername());
-            leadingBidder.setStyle("-fx-text-fill: #34d399;");
+
+            // Only handle the input box and success messages here!
             manualBidInput.clear();
             manualBidInput.setPromptText("Bid Successful!");
             manualBidInput.setStyle("-fx-prompt-text-fill: #27ae60; -fx-border-color: #27ae60;");
+
+            // (Note: The LIVE_BID_UPDATE broadcast is already handling the price and leader text!)
+
         } else {
             manualBidInput.clear();
             manualBidInput.setPromptText(serverMessage);

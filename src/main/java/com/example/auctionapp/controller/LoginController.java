@@ -81,6 +81,10 @@ public class LoginController {
                         messageLabel.setText("Login Successful! Loading auction...");
                         messageLabel.setStyle("-fx-text-fill: green;");
 
+                        // 🌟 THE FIX: Just call your router directly!
+                        // It already has its own Thread and readLine() loop inside it.
+                        BrowseController.startGlobalListener();
+
                         try {
                             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/Dashboard.fxml"));
                             Parent root = loader.load();
@@ -102,7 +106,6 @@ public class LoginController {
                         messageLabel.setStyle("-fx-text-fill: red;");
                     }
                 });
-
             } catch (Exception e) {
                 // If the server is offline, this catches the crash and safely tells the UI
                 Platform.runLater(() -> {

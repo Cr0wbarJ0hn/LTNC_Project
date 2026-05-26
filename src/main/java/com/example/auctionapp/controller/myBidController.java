@@ -27,6 +27,7 @@ public class myBidController {
 
 
 
+
     private DashboardController mainDashboard;
 
     @FXML private Label greetingLabel;
@@ -43,8 +44,6 @@ public class myBidController {
     public void initialize() {
         // 🌟 CRITICAL FIX: Register this instance so the Global Router can deliver the data!
         activeMyBidsScreen = this;
-
-
         if (myBidsScrollPane != null) {
             myBidsScrollPane.setStyle("-fx-background-color: transparent; -fx-background: #16161f;");
         }

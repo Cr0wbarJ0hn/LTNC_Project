@@ -21,9 +21,22 @@ public class UserSession {
         return loggedInUsername;
     }
 
-    // Call this when the user clicks "Logout"
     public static void cleanUserSession() {
         loggedInUsername = null;
+        currentCategory = "All"; // Reset category too!
+
+        try {
+            if (out != null) {
+                out.close();
+                out = null;
+            }
+            if (in != null) {
+                in.close();
+                in = null;
+            }
+        } catch (Exception e) {
+            System.err.println("Error cleaning up network streams on logout.");
+        }
     }
     public static PrintWriter getOut() { return out; }
     public static void setOut(PrintWriter out) { UserSession.out = out; }
@@ -38,6 +51,9 @@ public class UserSession {
     public static void setCurrentCategory(String category) {
         currentCategory = category;
     }
+
+
+
 
 
 }

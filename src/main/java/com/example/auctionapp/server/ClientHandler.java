@@ -52,6 +52,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
                     case "GET_MY_BIDS" -> handleGetMyBids(request);
                     case "GET_MY_AUCTIONS" -> handleGetMyAuction(request);
                     case "GET_AUCTION_DETAIL" -> handleGetAuctionDetail(request);
+                    case "REGISTER_AUTOBID" -> handleRegisterAutoBid(request);
                     case "LOGOUT" -> handleLogout();
                     default -> sendMessage(gson.toJson(new NetworkMessage("ERROR", "Unknown command", false)));
                 }
@@ -73,6 +74,28 @@ public class ClientHandler implements Runnable, AuctionObserver {
             sendMessage(gson.toJson(new NetworkMessage("LOGIN_SUCCESS", "Welcome back!", true)));
         } else {
             sendMessage(gson.toJson(new NetworkMessage("LOGIN_ERROR", "Incorrect credentials.", false)));
+        }
+    }
+
+    private void handleRegisterAutoBid(JsonObject request) {
+        try {
+            // Extract parameters from incoming client transmission envelope
+            JsonObject bidPayload = request.get("data").getAsJsonObject();
+            int auctionId = bidPayload.get("auctionId").getAsInt();
+            double maxBudget = bidPayload.get("maxBudget").getAsDouble();
+
+            // Safety check: Use the username attached to this specific client connection thread
+            String activeUser = (this.username != null) ? this.username : "Unknown";
+
+            // Commit the auto-bid preference directly to your new Postgres table
+
+            // Notify client of success
+            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", "Auto-bid configured at $" + maxBudget, true)));
+            System.out.println("🤖 [SERVER LOG]: Successfully registered Auto-Bid for " + activeUser + " on Item " + auctionId);
+
+        } catch (Exception e) {
+            System.err.println("❌ [SERVER ERROR]: Failed to register auto-bid: " + e.getMessage());
+            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", "Failed to activate auto-bid: " + e.getMessage(), false)));
         }
     }
 

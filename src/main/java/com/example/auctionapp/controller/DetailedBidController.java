@@ -20,29 +20,48 @@ import com.example.auctionapp.model.NetworkMessage;
 import javafx.application.Platform;
 
 import java.io.ByteArrayInputStream;
+import java.io.PrintWriter;
 import java.util.Base64;
 
 public class DetailedBidController {
 
-    @FXML private Label DetailTimeLeft;
+    @FXML
+    private Label DetailTimeLeft;
     private int currentAuctionId;
     private String currentUsername = UserSession.getUsername();
 
-    @FXML private TextField manualBidInput;
-    @FXML private VBox autoBidSettings;
-    @FXML private CheckBox autoBidSwitch;
-    @FXML private Pane manualBidPane;
-    @FXML private Pane autoBidPane;
-    @FXML private Label DetailIncrement;
-    @FXML private Hyperlink BackLink;
-    @FXML private Label ItemName;
-    @FXML private ImageView DetailImage;
-    @FXML private Label DetailDescription;
-    @FXML private Label ConditionLabel;
-    @FXML private Label Sellerlabel;
-    @FXML private Label DetailPrice;
-    @FXML private LineChart<String, Number> priceHistoryChart;
-    @FXML private Label leadingBidder;
+    @FXML
+    private TextField manualBidInput;
+    @FXML
+    private VBox autoBidSettings;
+    @FXML
+    private CheckBox autoBidSwitch;
+    @FXML
+    private TextField autoBidTextField;
+    @FXML
+    private Pane manualBidPane;
+    @FXML
+    private Pane autoBidPane;
+    @FXML
+    private Label DetailIncrement;
+    @FXML
+    private Hyperlink BackLink;
+    @FXML
+    private Label ItemName;
+    @FXML
+    private ImageView DetailImage;
+    @FXML
+    private Label DetailDescription;
+    @FXML
+    private Label ConditionLabel;
+    @FXML
+    private Label Sellerlabel;
+    @FXML
+    private Label DetailPrice;
+    @FXML
+    private LineChart<String, Number> priceHistoryChart;
+    @FXML
+    private Label leadingBidder;
 
     private javafx.scene.Node previousContent;
 
@@ -116,6 +135,43 @@ public class DetailedBidController {
         fetchLiveAuctionData(auctionId);
     }
 
+    @FXML
+    public void handleSetAutoBidButtonClick() {
+        String budgetInput = autoBidTextField.getText().trim();
+
+        if (budgetInput.isEmpty()) {
+            autoBidTextField.setPromptText("Please enter a maximum budget amount.");
+            autoBidTextField.setStyle("-fx-text-fill: red;");
+            return;
+        }
+
+        try {
+            double maxBudget = Double.parseDouble(budgetInput);
+            int auctionId = this.currentAuctionId; // Uses your existing tracked ID
+
+            // Construct the request packet using Gson
+            JsonObject request = new JsonObject();
+            request.addProperty("action", "REGISTER_AUTOBID");
+
+            JsonObject dataEnvelope = new JsonObject();
+            dataEnvelope.addProperty("auctionId", auctionId);
+            dataEnvelope.addProperty("maxBudget", maxBudget);
+            request.add("data", dataEnvelope);
+
+            // Drop the packet directly down the socket output stream pipe
+            PrintWriter out = UserSession.getOut();
+            out.println(new Gson().toJson(request));
+            out.flush();
+
+            autoBidTextField.setPromptText("Sending request to server...");
+            autoBidTextField.setStyle("-fx-text-fill: blue;");
+
+        } catch (NumberFormatException e) {
+            autoBidTextField.setPromptText("Invalid number format! Use digits only.");
+            autoBidTextField.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
+        }
+    }
+
     // 🌟 FIX: Only SENDS the data request. Zero line-reading here!
     private void fetchLiveAuctionData(int auctionId) {
         try {
@@ -146,6 +202,8 @@ public class DetailedBidController {
 
             UserSession.getOut().println(clientGson.toJson(messageEnvelope));
             UserSession.getOut().flush();
+            manualBidInput.setPromptText("Sending request to server...");
+            manualBidInput.setStyle("-fx-text-fill: blue;");
         } catch (NumberFormatException nfe) {
             manualBidInput.setPromptText("Enter valid number!");
             manualBidInput.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
@@ -190,6 +248,16 @@ public class DetailedBidController {
             manualBidInput.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
         }
     }
+
+    public void handleAutoBidResponse(boolean success, String message) {
+        autoBidTextField.setPromptText(message);
+        if (success) {
+            autoBidTextField.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
+        } else {
+            autoBidTextField.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
+        }
+    }
+
 
     // 🌟 NEW METHOD: Called by Global Router when *any* client changes the price in real-time
     public void handleRealtimePriceBroadcast(double price, String highestBidderName) {

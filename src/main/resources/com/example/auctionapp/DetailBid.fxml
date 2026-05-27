@@ -19,7 +19,7 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.Font?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1200.0" prefWidth="1591.0" style="-fx-background-color: #16161f;" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.DetailedBidController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1200.0" prefWidth="1591.0" style="-fx-background-color: #16161f;" stylesheets="@../../../style.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.DetailedBidController">
    <children>
       <Label fx:id="ItemName" prefHeight="133.0" prefWidth="1538.0" text="Item name" textFill="WHITE">
          <font>
@@ -123,12 +123,12 @@
                      <children>
                         <Pane fx:id="autoBidPane" prefHeight="300.0" style="-fx-background-color: #20202E;" styleClass="modern-card">
                            <children>
-                              <TextField layoutX="49.0" layoutY="54.0" prefHeight="51.0" prefWidth="672.0" promptText="Limit (Max Bid)" styleClass="modern-input" />
-                              <Button fx:id="autoBiddingButton" layoutX="49.0" layoutY="180.0" prefHeight="59.0" prefWidth="672.0" style="-fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5);" styleClass="sell-item-button" text="Start Auto-Bidding" />
+                              <TextField fx:id="autoBidTextField" layoutX="49.0" layoutY="54.0" prefHeight="51.0" prefWidth="672.0" promptText="Limit (Max Bid)" styleClass="modern-input" />
+                              <Button fx:id="autoBiddingButton" layoutX="49.0" layoutY="180.0" onAction="#handleSetAutoBidButtonClick" prefHeight="59.0" prefWidth="672.0" style="-fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5);" styleClass="sell-item-button" text="Start Auto-Bidding" />
                            </children>
                         </Pane>
 
-                        <Pane fx:id="manualBidPane" prefHeight="300.0" style="-fx-background-color: #20202E;" styleClass="modern-card">
+                        <Pane fx:id="manualBidPane" prefHeight="300.0" style="-fx-background-color: #20202E;" styleClass="modern-card" visible="false">
                            <children>
                               <TextField fx:id="manualBidInput" layoutX="49.0" layoutY="54.0" prefHeight="51.0" prefWidth="672.0" promptText="Enter your bid" styleClass="modern-input" />
                               <Button fx:id="DetailPlaceBid" layoutX="49.0" layoutY="180.0" onAction="#handleManualBid" prefHeight="59.0" prefWidth="672.0" style="-fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5);" styleClass="sell-item-button" text="Submit Manual Bid" />

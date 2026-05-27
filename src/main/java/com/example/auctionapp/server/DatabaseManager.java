@@ -193,6 +193,7 @@ public class DatabaseManager {
     }
 
     public static void initializeTables() {
+
         String createMembersTable = "CREATE TABLE IF NOT EXISTS members (" +
                 "email VARCHAR(100) UNIQUE, " +
                 "username VARCHAR(50) PRIMARY KEY, " +

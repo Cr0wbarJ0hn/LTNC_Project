@@ -3,6 +3,7 @@ package com.example.auctionapp.model;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.temporal.ChronoUnit;
 
 public class Auction {
     private int auctionId;
@@ -46,6 +47,12 @@ public class Auction {
         if (newBid.getBidAmount() >= minimumRequiredBid) {
             bidHistory.add(newBid);
             currentHighestBid = newBid.getBidAmount();
+            long secondsRemaining = ChronoUnit.SECONDS.between(LocalDateTime.now(), this.endTime);
+
+            if (secondsRemaining > 0 && secondsRemaining <= 300) {
+                // Extend the end time
+                this.endTime = LocalDateTime.now().plusSeconds(300);
+            }
         } else {
             throw new AuctionException("Bid rejected: Bid price must be at least: " + minimumRequiredBid);
         }

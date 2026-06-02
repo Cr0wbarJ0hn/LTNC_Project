@@ -1,5 +1,6 @@
 package com.example.auctionapp.controller;
 
+import com.example.auctionapp.model.Member;
 import com.example.auctionapp.model.UserSession;
 import com.example.auctionapp.model.NetworkMessage;
 import com.google.gson.Gson;
@@ -10,27 +11,37 @@ import com.google.gson.JsonParser;
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 
 public class myAuctionController {
 
     private DashboardController mainDashboard;
 
     @FXML private Label greetingLabel;
+    @FXML private Button EditItemButton;
     public static myAuctionController activeMyAuctionsScreen = null;
-
     @FXML private ScrollPane myAuctionScrollPane;
     @FXML private FlowPane myAuctionFlowPane;
     @FXML private VBox emptyRecentPane;
+
+    // 📦 Internal data source tracking the items currently shown on screen for the Edit Window
+    private final ObservableList<EditableItem> liveUserAuctions = FXCollections.observableArrayList();
 
     public void setMainDashboard(DashboardController mainDashboard) {
         this.mainDashboard = mainDashboard;
@@ -39,6 +50,10 @@ public class myAuctionController {
     @FXML
     public void initialize() {
         activeMyAuctionsScreen = this;
+
+        // Wire up the edit button to launch the configuration popup
+        EditItemButton.setOnAction(event -> openEditItemWindow());
+
         // Automatically start fetching the logged-in user's auctions on load
         fetchHostedAuctions();
     }
@@ -78,73 +93,244 @@ public class myAuctionController {
     }
 
     // 🌟 THE ROUTER HAND-OFF TARGET
-
-
-
-
     public void displayAuctionsOnScreen(String serverResponse) {
-        myAuctionFlowPane.getChildren().clear();
+        Platform.runLater(() -> {
+            myAuctionFlowPane.getChildren().clear();
+            liveUserAuctions.clear(); // Empty the previous list for the Edit Window
 
-        System.out.println("DEBUG - My Auctions Raw Server JSON: " + serverResponse);
+            System.out.println("DEBUG - My Auctions Raw Server JSON: " + serverResponse);
 
-        if (serverResponse == null || serverResponse.equals("NO_ITEMS") || serverResponse.equals("[]") || serverResponse.isEmpty()) {
-            emptyRecentPane.setVisible(true);
-            myAuctionScrollPane.setVisible(false);
+            if (serverResponse == null || serverResponse.equals("NO_ITEMS") || serverResponse.equals("[]") || serverResponse.isEmpty()) {
+                emptyRecentPane.setVisible(true);
+                myAuctionScrollPane.setVisible(false);
+                return;
+            }
+
+            emptyRecentPane.setVisible(false);
+            myAuctionScrollPane.setVisible(true);
+
+            try {
+                JsonArray auctionItems = JsonParser.parseString(serverResponse).getAsJsonArray();
+
+                for (JsonElement element : auctionItems) {
+                    JsonObject itemObj = element.getAsJsonObject();
+
+                    try {
+                        int id = itemObj.get("id").getAsInt();
+                        String name = itemObj.get("itemName").getAsString();
+                        double startPrice = itemObj.get("startingPrice").getAsDouble();
+                        double currentPrice = itemObj.get("currentPrice").getAsDouble();
+                        String condition = itemObj.get("itemCondition").getAsString();
+                        String base64Image = itemObj.get("imagePath").getAsString();
+                        String description = itemObj.get("description").getAsString();
+                        String seller = itemObj.get("seller").getAsString();
+                        long endTimeMillis = itemObj.get("endTime").getAsLong();
+                        double increment = itemObj.get("priceIncrement").getAsDouble();
+
+                        // Fallback check in case 'itemType' isn't explicitly in this JSON payload yet
+                        String type = itemObj.has("itemType") ? itemObj.get("itemType").getAsString() : "";
+
+                        // 🌟 1. Save data into our local list for the Edit Window Dropdown
+                        liveUserAuctions.add(new EditableItem(id, name, type, condition, description));
+
+                        // 2. Load the standard card FXML template instance
+                        FXMLLoader cardLoader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/AuctionCard.fxml"));
+                        Node cardNode = cardLoader.load();
+                        AuctionCardController cardController = cardLoader.getController();
+
+                        // Push attributes directly into the layout controller parameters
+                        cardController.setCardData(
+                                id, name, startPrice, currentPrice, condition,
+                                description, base64Image, seller, endTimeMillis, increment
+                        );
+
+                        myAuctionFlowPane.getChildren().add(cardNode);
+
+                    } catch (Exception e) {
+                        System.out.println("ERROR: Could not process single hosted item block entry!");
+                        e.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("ERROR: Invalid JSON structure payload handled from server stream!");
+                e.printStackTrace();
+            }
+        });
+    }
+
+    // ====================================================================================
+    // 🔧 THE EDIT WINDOW COMPONENT
+    // ====================================================================================
+
+    private void openEditItemWindow() {
+        if (liveUserAuctions.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "You don't have any active auctions to edit!", ButtonType.OK);
+            alert.setTitle("No Content Available");
+            alert.setHeaderText(null);
+            alert.showAndWait();
             return;
         }
 
-        emptyRecentPane.setVisible(false);
-        myAuctionScrollPane.setVisible(true);
+        Stage editStage = new Stage();
+        editStage.initModality(Modality.APPLICATION_MODAL); // Freeze background UI
+        editStage.setTitle("Modify Your Listing");
 
-        try {
-            JsonArray auctionItems = JsonParser.parseString(serverResponse).getAsJsonArray();
+        VBox rootLayout = new VBox(15);
+        rootLayout.setPadding(new Insets(20));
+        rootLayout.setStyle("-fx-background-color: #16161f;");
 
-            for (JsonElement element : auctionItems) {
-                JsonObject itemObj = element.getAsJsonObject();
+        Label selectLabel = new Label("Select Item to Update:");
+        selectLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
 
-                try {
-                    int id = itemObj.get("id").getAsInt();
-                    String name = itemObj.get("itemName").getAsString();
-                    double startPrice = itemObj.get("startingPrice").getAsDouble();
-                    double currentPrice = itemObj.get("currentPrice").getAsDouble();
-                    String condition = itemObj.get("itemCondition").getAsString();
-                    String base64Image = itemObj.get("imagePath").getAsString();
-                    String description = itemObj.get("description").getAsString();
-                    String seller = itemObj.get("seller").getAsString();
-                    long endTimeMillis = itemObj.get("endTime").getAsLong();
-                    double increment = itemObj.get("priceIncrement").getAsDouble();
+        ComboBox<EditableItem> itemComboBox = new ComboBox<>();
+        itemComboBox.setPrefWidth(320);
+        itemComboBox.setItems(liveUserAuctions);
+        itemComboBox.setStyle("-fx-background-color: #20202E; -fx-text-fill: white; -fx-border-color: #2b2b3c;");
 
-                    // Load the standard card FXML template instance
-                    FXMLLoader cardLoader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/AuctionCard.fxml"));
-                    Node cardNode = cardLoader.load();
-                    AuctionCardController cardController = cardLoader.getController();
+        // Convert the object references into readable item names in the dropdown
+        itemComboBox.setConverter(new StringConverter<>() {
+            @Override public String toString(EditableItem row) { return row != null ? row.name : ""; }
+            @Override public EditableItem fromString(String string) { return null; }
+        });
 
-                    // Push attributes directly into the layout controller parameters
-                    cardController.setCardData(
-                            id,
-                            name,
-                            startPrice,
-                            currentPrice,
-                            condition,
-                            description,
-                            base64Image,
-                            seller,
-                            endTimeMillis,
-                            increment
-                    );
+        // 🌟 Inputs: Text Fields & Area
+        TextField nameField = new TextField();
+        TextArea descField = new TextArea();
+        descField.setPrefRowCount(3);
 
-                    myAuctionFlowPane.getChildren().add(cardNode);
+        // 🌟 Inputs: New Dropdown ComboBoxes
+        ComboBox<String> typeComboBox = new ComboBox<>();
+        typeComboBox.getItems().addAll("Electronics", "Vehicles", "Furniture", "Books", "Fashion");
+        typeComboBox.setPrefWidth(320);
 
-                } catch (Exception e) {
-                    System.out.println("ERROR: Could not process single hosted item block entry!");
-                    e.printStackTrace();
+        ComboBox<String> conditionComboBox = new ComboBox<>();
+        conditionComboBox.getItems().addAll("NEW", "USED", "LIKE NEW");
+        conditionComboBox.setPrefWidth(320);
+
+        // Styling configurations
+        String inputStyles = "-fx-background-color: #20202E; -fx-text-fill: white; -fx-border-color: #2b2b3c; -fx-border-radius: 6;";
+        nameField.setStyle(inputStyles);
+        typeComboBox.setStyle(inputStyles);
+        conditionComboBox.setStyle(inputStyles);
+        descField.setStyle(
+                "-fx-control-inner-background: #20202E; " +  // This targets the inner text viewport
+                        "-fx-text-fill: white; " +
+                        "-fx-background-color: #20202E; " +
+                        "-fx-border-color: #2b2b3c; " +
+                        "-fx-border-radius: 6;"
+        );
+
+        // 🌟 CRITICAL FIX: Custom cell factory styling to crush the default Modena grey selection blocks
+        String cellStyles = "-fx-background-color: #20202E; -fx-text-fill: white; -fx-padding: 8px;";
+
+        javafx.util.Callback<ListView<String>, ListCell<String>> customCellFactory = listView -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("-fx-background-color: #20202E;");
+                } else {
+                    setText(item);
+                    setStyle(cellStyles);
                 }
             }
-        } catch (Exception e) {
-            System.out.println("ERROR: Invalid JSON structure payload handled from server stream!");
-            e.printStackTrace();
+        };
+
+        // Apply the cell designs to both the dropdown list cells AND the main selected window button preview
+        typeComboBox.setCellFactory(customCellFactory);
+        typeComboBox.setButtonCell(customCellFactory.call(null));
+
+        conditionComboBox.setCellFactory(customCellFactory);
+        conditionComboBox.setButtonCell(customCellFactory.call(null));
+        itemComboBox.setStyle(itemComboBox.getStyle() + " -fx-control-inner-background: #20202E;");
+
+        // Pre-fill input layouts instantly when an item from the main dropdown is selected
+        itemComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (newSel != null) {
+                nameField.setText(newSel.name);
+                descField.setText(newSel.description);
+
+                // Smart matching logic for Type selection
+                if (newSel.type != null && !newSel.type.isEmpty()) {
+                    typeComboBox.getSelectionModel().select(newSel.type);
+                } else {
+                    typeComboBox.getSelectionModel().clearSelection();
+                }
+
+                // Smart matching logic for Condition selection
+                if (newSel.condition != null && !newSel.condition.isEmpty()) {
+                    // normalize inputs (e.g. "New" -> "NEW") to match the static choices perfectly
+                    conditionComboBox.getSelectionModel().select(newSel.condition.toUpperCase());
+                } else {
+                    conditionComboBox.getSelectionModel().clearSelection();
+                }
+            }
+        });
+
+        GridPane formGrid = new GridPane();
+        formGrid.setHgap(10);
+        formGrid.setVgap(12);
+
+        formGrid.add(new Label("Item Name:") {{ setStyle("-fx-text-fill: #ffffff;"); }}, 0, 0);
+        formGrid.add(nameField, 1, 0);
+        formGrid.add(new Label("Item Type:") {{ setStyle("-fx-text-fill: #ffffff;"); }}, 0, 1);
+        formGrid.add(typeComboBox, 1, 1);
+        formGrid.add(new Label("Condition:") {{ setStyle("-fx-text-fill: #ffffff;"); }}, 0, 2);
+        formGrid.add(conditionComboBox, 1, 2);
+        formGrid.add(new Label("Description:") {{ setStyle("-fx-text-fill: #ffffff;"); }}, 0, 3);
+        formGrid.add(descField, 1, 3);
+
+        Button saveButton = new Button("Commit Changes");
+        saveButton.setStyle("-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5); -fx-text-fill: white; -fx-font-weight: bold;");
+        saveButton.setPrefWidth(160);
+
+        saveButton.setOnAction(e -> {
+            EditableItem targetItem = itemComboBox.getSelectionModel().getSelectedItem();
+            if (targetItem == null) return;
+
+            // Extract selected choice values safely, falling back to empty string if none selected
+            String selectedType = typeComboBox.getSelectionModel().getSelectedItem();
+            String selectedCondition = conditionComboBox.getSelectionModel().getSelectedItem();
+
+            if (UserSession.getCurrentUser() instanceof Member currentMember) {
+                // Fires your domain model method with the clean dropdown values!
+                currentMember.editItemListing(
+                        targetItem.id,
+                        nameField.getText(),
+                        selectedType != null ? selectedType : "",
+                        selectedCondition != null ? selectedCondition : "",
+                        descField.getText()
+                );
+                editStage.close();
+            }
+        });
+
+        rootLayout.getChildren().addAll(selectLabel, itemComboBox, new Separator(), formGrid, saveButton);
+        editStage.setScene(new Scene(rootLayout, 800, 600));
+        editStage.showAndWait();
+    }
+
+    public void handleUpdateResponse(boolean success) {
+        if (success) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Your auction item was modified successfully!", ButtonType.OK);
+            alert.setTitle("Success");
+            alert.setHeaderText(null);
+            alert.showAndWait();
+
+            // Instant Visual Refresh! Re-fetch data from the server so the cards update on screen
+            fetchHostedAuctions();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to update item details. Please check your database permissions.", ButtonType.OK);
+            alert.setTitle("Database Error");
+            alert.setHeaderText(null);
+            alert.showAndWait();
         }
     }
+
+    // ====================================================================================
+    // SKELETON ANIMATIONS & HELPERS
+    // ====================================================================================
 
     private VBox createSkeletonCard() {
         // Base skeleton node sizing matched directly to card template profiles
@@ -241,5 +427,25 @@ public class myAuctionController {
         }
 
         return skeletonCard;
+    }
+
+    /**
+     * A lightweight internal data class used exclusively to bridge the gap between
+     * the incoming JSON layout parameters and the Dropdown ComboBox selection menu.
+     */
+    public static class EditableItem {
+        public int id;
+        public String name;
+        public String type;
+        public String condition;
+        public String description;
+
+        public EditableItem(int id, String name, String type, String condition, String description) {
+            this.id = id;
+            this.name = name;
+            this.type = type;
+            this.condition = condition;
+            this.description = description;
+        }
     }
 }

@@ -20,13 +20,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
-
 import java.util.HashMap;
 
 public class myBidController {
-
-
-
 
     private DashboardController mainDashboard;
 

@@ -1,9 +1,10 @@
 package com.example.auctionapp.controller;
 
-import com.example.auctionapp.model.NetworkMessage; // Ensure this import matches where you saved NetworkMessage!
-import com.example.auctionapp.model.UserSession;
+import com.example.auctionapp.model.*;
+import com.example.auctionapp.network.NetworkRouter;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -34,87 +35,125 @@ public class LoginController {
 
     @FXML
     public void handleSignIn(ActionEvent event) {
-        String user = usernameField.getText();
+        String user = usernameField.getText().trim();
         String pass = passwordField.getText();
 
-        // We MUST capture the window (Stage) on the main JavaFX thread before we go to the background!
+        if (user.isEmpty() || pass.isEmpty()) {
+            messageLabel.setText("Please enter a username and password.");
+            messageLabel.setStyle("-fx-text-fill: red;");
+            return;
+        }
+
+        // Capture the active window Stage before stepping out of the JavaFX Application Thread
         Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
 
-        // Give the user immediate feedback so they know the button worked
         messageLabel.setText("Connecting to server...");
         messageLabel.setStyle("-fx-text-fill: blue;");
 
-        // 1. START A BACKGROUND THREAD (No more frozen UI!)
+        // 1. Fire up the background thread to handle socket overhead
         new Thread(() -> {
             try {
-                // 2. Pick up the phone and call Door 5000
                 Socket socket = new Socket("localhost", 5000);
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-                UserSession.setOut(out);
-                UserSession.setIn(in);
-                UserSession.setUsername(user);
-
-                // 3. Create our JSON Request using Gson
+                // 2. Prepare and emit our standard JSON login payload packet
                 Gson gson = new Gson();
                 JsonObject loginRequest = new JsonObject();
                 loginRequest.addProperty("action", "LOGIN");
                 loginRequest.addProperty("username", user);
                 loginRequest.addProperty("password", pass);
 
-                // Send the JSON to the server
                 out.println(gson.toJson(loginRequest));
                 out.flush();
 
-                // 4. Wait for the Server's JSON reply
+                // 3. Receive response line from the server
                 String serverResponse = in.readLine();
                 System.out.println("CLIENT DEBUG: Server says: " + serverResponse);
 
-                // Decode the JSON back into a Java Object
-                NetworkMessage response = gson.fromJson(serverResponse, NetworkMessage.class);
+                if (serverResponse == null) {
+                    Platform.runLater(() -> {
+                        messageLabel.setText("Error: Server disconnected unexpectedly.");
+                        messageLabel.setStyle("-fx-text-fill: red;");
+                    });
+                    return; // Stop the thread here so Gson doesn't crash!
+                }
 
-                // 5. SAFELY JUMP BACK TO THE JAVAFX UI THREAD TO UPDATE THE SCREEN
-                Platform.runLater(() -> {
-                    // We check the "success" boolean we set up in our NetworkMessage class
-                    if (response.success) {
-                        messageLabel.setText("Login Successful! Loading auction...");
+                // 🌟 FIX: Parse as a generic JsonObject instead of NetworkMessage to extract dynamic fields
+                JsonObject responseJson = JsonParser.parseString(serverResponse).getAsJsonObject();
+                boolean isSuccess = responseJson.has("success") && responseJson.get("success").getAsBoolean();
+
+                if (isSuccess) {
+                    // 4. Extract out our newly implemented authorization token parameter
+                    String assignedRole = responseJson.get("role").getAsString();
+
+                    // 5. Polymorphic Object Creation! Initialize the proper model instance
+                    User loggedInUser;
+                    if ("ADMIN".equalsIgnoreCase(assignedRole)) {
+                        loggedInUser = new Admin("System Admin", "N/A", "admin@uet.edu.vn", user, "");
+                    } else {
+                        loggedInUser = new Member("Standard User", "N/A", "user@uet.edu.vn", user, "","N/A");
+                    }
+
+                    // 6. Bind the initialized session object tracking references globally
+                    UserSession.setSession(loggedInUser, out);
+                    UserSession.setIn(in); // Save reader pipe to global session tracking just in case
+
+                    // Start up your router background listening loop worker
+                    NetworkRouter.startGlobalListener();
+
+                    // 7. SAFELY STEP BACK UNTO JAVAFX MAIN THREAD TO MANIPULATE THE VIEWS
+                    Platform.runLater(() -> {
+                        messageLabel.setText("Login Successful! Loading workspace...");
                         messageLabel.setStyle("-fx-text-fill: green;");
 
-                        // 🌟 THE FIX: Just call your router directly!
-                        // It already has its own Thread and readLine() loop inside it.
-                        BrowseController.startGlobalListener();
-
                         try {
-                            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/Dashboard.fxml"));
+                            // ⚙️ GATES OF ROUTING: Select target layout path based on polymorphic class checks
+                            String fxmlPath;
+                            String windowTitle;
+
+                            if (UserSession.isAdmin()) {
+                                fxmlPath = "/com/example/auctionapp/AdminDashboard.fxml";
+                                windowTitle = "UET Auction House - Administrative Control Console";
+                            } else {
+                                // Points to your primary marketplace interface page
+                                fxmlPath = "/com/example/auctionapp/Dashboard.fxml";
+                                windowTitle = "UET Auction House - Marketplace";
+                            }
+
+                            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
                             Parent root = loader.load();
 
-                            // Use the stage we captured earlier!
                             Scene scene = new Scene(root, 1900, 1200);
                             stage.setScene(scene);
-                            stage.setTitle("UET Auction House - Dashboard");
+                            stage.setTitle(windowTitle);
                             stage.centerOnScreen();
                             stage.show();
 
                         } catch (IOException e) {
-                            System.out.println("Crash! Could not find Dashboard.fxml");
+                            System.err.println("Critical Failure: Could not load next view FXML file layout page!");
                             e.printStackTrace();
                         }
-                    } else {
-                        // The server told us the password was wrong
-                        messageLabel.setText("Login Failed: " + response.data);
+                    });
+
+                } else {
+                    // Login failed response from database manager authentication logic
+                    String errorMsg = responseJson.has("message") ? responseJson.get("message").getAsString() : "Incorrect credentials.";
+                    Platform.runLater(() -> {
+                        messageLabel.setText("Login Failed: " + errorMsg);
                         messageLabel.setStyle("-fx-text-fill: red;");
-                    }
-                });
+                    });
+                }
+
             } catch (Exception e) {
-                // If the server is offline, this catches the crash and safely tells the UI
+                // Handles system offline or broken network loop states gracefully
                 Platform.runLater(() -> {
-                    messageLabel.setText("Error: Could not connect to the server.");
+                    messageLabel.setText("Error: Server appears to be offline.");
                     messageLabel.setStyle("-fx-text-fill: red;");
                 });
                 e.printStackTrace();
             }
-        }).start(); // Start the background thread!
+        }).start();
     }
 
     @FXML

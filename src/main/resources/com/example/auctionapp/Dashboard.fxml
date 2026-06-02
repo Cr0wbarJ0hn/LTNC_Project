@@ -26,7 +26,7 @@
             <BorderPane fx:id="mainContent" layoutX="14.0" layoutY="23.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1200.0" prefWidth="1900.0" style="-fx-background-color: #FFFFFF;" styleClass="modern-card" stylesheets="@../../../style.css">
             
                      <left>
-                  <Pane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="305.0" style="-fx-background-color: #20202E;" stylesheets="@../../../style.css" BorderPane.alignment="CENTER">
+                  <Pane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="303.0" style="-fx-background-color: #20202E;" stylesheets="@../../../style.css" BorderPane.alignment="CENTER">
                      <children>
                         <ToggleButton fx:id="HomeButton" alignment="CENTER_LEFT" graphicTextGap="5.0" layoutX="28.0" layoutY="174.0" mnemonicParsing="false" onAction="#loadHomeView" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="Home">
                            <toggleGroup>
@@ -120,7 +120,7 @@
                </left>
             
                      <right>
-                  <StackPane fx:id="rightPane" prefHeight="1200.0" prefWidth="453.0" BorderPane.alignment="CENTER">
+                  <StackPane fx:id="rightPane" prefHeight="1200.0" prefWidth="427.0" BorderPane.alignment="CENTER">
                      <children>
             
                               <VBox fx:id="emptyStatePane" prefHeight="875.0" prefWidth="348.0" style="-fx-background-color: #1A1A25;" stylesheets="@../../../style.css" visible="false">
@@ -240,12 +240,12 @@
                                        <children>
                                           <VBox spacing="2.0">
                                              <children>
-                                                <Label text="Starting Bid" textFill="#8e8e93">
+                                                <Label prefHeight="18.0" prefWidth="161.0" text="Starting Bid" textFill="#8e8e93">
                                                    <font>
                                                       <Font name="Segoe UI" size="14.0" />
                                                    </font>
                                                 </Label>
-                                                <Label fx:id="startingBidLabel" text="\$8,000" textFill="WHITE">
+                                                <Label fx:id="startingBidLabel" prefHeight="24.0" prefWidth="144.0" text="\$8,000" textFill="WHITE">
                                                    <font>
                                                       <Font name="Segoe UI" size="20.0" />
                                                    </font>
@@ -283,7 +283,7 @@
                                     -fx-background-radius: 15;
                                     -fx-cursor: hand;-fx-background-color: linear-gradient(from 0% 0% to 100% 0%, #7c3aed, #4f46e5);</style>
                                           </Button>
-                                          <Button fx:id="infoButton" mnemonicParsing="false" onAction="#loadDetailedBidScreen" prefHeight="187.0" prefWidth="155.0" styleClass="details-button" text="See item details">
+                                          <Button fx:id="infoButton" mnemonicParsing="false" onAction="#loadDetailedBidScreen" prefHeight="46.0" prefWidth="161.0" styleClass="details-button" text="See item details">
                                              <font>
                                                 <Font name="Segoe UI Bold" size="16.0" />
                                              </font>

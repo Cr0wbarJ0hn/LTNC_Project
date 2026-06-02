@@ -1,11 +1,8 @@
 package com.example.auctionapp.controller;
 
-import com.example.auctionapp.model.UserSession;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.Hyperlink;
-import com.example.auctionapp.controller.BrowseController;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;

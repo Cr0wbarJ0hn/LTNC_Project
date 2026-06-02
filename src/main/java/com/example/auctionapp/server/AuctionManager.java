@@ -45,7 +45,7 @@ public class AuctionManager {
     }
 
 
-    private void broadcastPriceUpdate(int auctionId, double newPrice, String highestBidder) {
+    public void broadcastPriceUpdate(int auctionId, double newPrice, String highestBidder) {
         for (AuctionObserver client : activeClients) {
             client.onBidUpdated(auctionId, newPrice, highestBidder);
         }
@@ -65,9 +65,24 @@ public class AuctionManager {
             throw new AuctionClosedException("This auction item is no longer active or does not exist!");
         }
 
-        // Pass the bid details into the individual item's thread lock thread for processing
+        // Pass the bid details into the individual item's thread lock thread for processing.
+        // (This method now internally handles all broadcasting for both manual and auto-bids!)
         session.processIncomingBid(username, amount);
-        broadcastPriceUpdate(auctionId, session.getCurrentPrice(), session.getHighestBidder());
+    }
+
+    public void submitAutoBid(int auctionId, String username, double maxBudget)
+            throws AuctionClosedException, InvalidBidException, SelfBiddingException {
+
+        // Look up the active item in the server's running concurrent memory map
+        AuctionSession session = activeAuctions.get(auctionId);
+
+        // If the auction isn't in memory, it has already expired or doesn't exist!
+        if (session == null) {
+            throw new AuctionClosedException("This auction item is no longer active or does not exist!");
+        }
+
+        // Pass configuration down into the individual item's isolated thread lock for safe execution
+        session.processIncomingAutoBidRegistration(username, maxBudget);
     }
 
     // Add an auction to the server's watch list
@@ -86,18 +101,69 @@ public class AuctionManager {
                 // If the current time has passed the auction's end time
                 if (now.isAfter(session.getEndTime())) {
 
-                    // 1. Update the database to active = false
-                    DatabaseManager.closeAuction(session.getAuctionId());
+                    // 🌟 Step 1: Thread-safe lock during closure to prevent late incoming bids
+                    session.getLock().lock();
+                    try {
+                        int auctionId = session.getAuctionId();
+                        String item = session.getItemName();
+                        String seller = session.getSellerName();
+                        String winner = session.getHighestBidder();
+                        double price = session.getCurrentPrice();
 
-                    // 2. Remove it from the server's active memory list
-                    activeAuctions.remove(session.getAuctionId());
+                        // 1. Update the database state to active = false
+                        DatabaseManager.closeAuction(auctionId);
 
-                    // 3. Announce the winner in the console
-                    System.out.println("🔔 AUCTION ENDED: Item " + session.getAuctionId() +
-                            " sold to " + session.getHighestBidder() +
-                            " for $" + session.getCurrentPrice());
+                        // 2. 🌟 PERSISTENT DATABASE NOTIFICATION ENGINE (Polymorphic Types)
+                        if (winner.equals("No bids yet") || winner == null) {
+                            // Notify Seller it expired empty
+                            DatabaseManager.createNotification(
+                                    seller, "ITEM_EXPIRED", "Auction Expired",
+                                    "Your listing '" + item + "' has ended with no valid bids.", auctionId
+                            );
+                        } else {
+                            // Notify Seller it sold successfully
+                            DatabaseManager.createNotification(
+                                    seller, "ITEM_SOLD", "Item Sold!",
+                                    "Congratulations! Your item '" + item + "' was sold to " + winner + " for $" + price, auctionId
+                            );
 
+                            // Notify Winner they won
+                            DatabaseManager.createNotification(
+                                    winner, "AUCTION_WON", "You Won!",
+                                    "Success! You won the auction for '" + item + "' with a final bid of $" + price, auctionId
+                            );
+                        }
 
+                        // Notify all Losers (everyone who bid/auto-bid but isn't the winner)
+                        for (String participant : session.getParticipants()) {
+                            if (!participant.equals(winner)) {
+                                DatabaseManager.createNotification(
+                                        participant, "AUCTION_LOST", "Auction Ended",
+                                        "The auction for '" + item + "' has closed. Better luck next time!", auctionId
+                                );
+                            }
+                        }
+
+                        for (AuctionObserver client : activeClients) {
+                            String connectedUser = client.getUsername();
+
+                            if (connectedUser != null &&
+                                    (connectedUser.equals(seller) || session.getParticipants().contains(connectedUser))) {
+
+                                // Send targeted network push message to their client listener
+                                client.onAuctionClosed(auctionId, item, winner, price);
+                            }
+                        }
+
+                        // 4. Remove it from the server's active memory list
+                        activeAuctions.remove(auctionId);
+
+                        System.out.println("🔔 [SYSTEM CLEANUP] Auction " + auctionId + " successfully terminated and logged.");
+
+                    } finally {
+                        // 🌟 Always unlock in a finally block to prevent thread deadlocks
+                        session.getLock().unlock();
+                    }
                 }
             }
         }, 0, 1, TimeUnit.SECONDS); // Delay 0, repeat every 1 second

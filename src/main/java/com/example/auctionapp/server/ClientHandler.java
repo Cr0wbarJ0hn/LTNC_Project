@@ -11,18 +11,24 @@ import com.example.auctionapp.exception.AuctionClosedException;
 import com.example.auctionapp.exception.InvalidBidException;
 import com.example.auctionapp.exception.SelfBiddingException;
 import java.net.Socket;
+import java.util.List;
+
 import com.google.gson.Gson;
 import com.example.auctionapp.model.NetworkMessage;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class ClientHandler implements Runnable, AuctionObserver {
     private Socket clientSocket;
     private BufferedReader in;
+    private String role;
     private PrintWriter out;
     private String username;
     private Gson gson = new Gson(); // Keep one instance for the whole class
+    private Socket socket;
+
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -45,6 +51,7 @@ public class ClientHandler implements Runnable, AuctionObserver {
                 // The switch now just "dispatches" to the right method
                 switch (command) {
                     case "LOGIN" -> handleLogin(request);
+                    case "ADMIN_FETCH_USERS" -> handleFetchUser(request);
                     case "REGISTER" -> handleRegister(request);
                     case "SUBMIT_AUCTION" -> handleSubmitAuction(request);
                     case "BID" -> handleBid(request);
@@ -53,7 +60,12 @@ public class ClientHandler implements Runnable, AuctionObserver {
                     case "GET_MY_AUCTIONS" -> handleGetMyAuction(request);
                     case "GET_AUCTION_DETAIL" -> handleGetAuctionDetail(request);
                     case "REGISTER_AUTOBID" -> handleRegisterAutoBid(request);
+                    case "FETCH_NOTIF_HISTORY" -> handleFetchNotifHistory(request); // 🌟 Added this line!
+                    case "ADMIN_DELETE_AUCTION" -> handleDeleteAuctions(request);
+                    case "ADMIN_FETCH_ALL_AUCTIONS" -> handleFetchAuction(request);
                     case "LOGOUT" -> handleLogout();
+                    case "ADMIN_DELETE_USER" -> handleDeleteUser(request);
+                    case "SELLER_UPDATE_ITEM" -> handelUpdateItem(request);
                     default -> sendMessage(gson.toJson(new NetworkMessage("ERROR", "Unknown command", false)));
                 }
             }
@@ -65,37 +77,201 @@ public class ClientHandler implements Runnable, AuctionObserver {
     }
 
 
+
+
+
+
     private void handleLogin(JsonObject request) {
         String loginUser = request.get("username").getAsString();
         String loginPass = request.get("password").getAsString();
 
-        if (DatabaseManager.verifyLogin(loginUser, loginPass)) {
+        // 1. Capture the role string ("USER", "ADMIN", or null if invalid)
+        String userRole = DatabaseManager.verifyLoginAndGetRole(loginUser, loginPass);
+
+        if (userRole != null) {
             this.username = loginUser;
-            sendMessage(gson.toJson(new NetworkMessage("LOGIN_SUCCESS", "Welcome back!", true)));
+
+            // 🌟 CRUCIAL: Save the role to this specific client socket thread instance!
+            // This stops sneaky clients from modifying their local code to bypass admin checks.
+            this.role = userRole;
+
+            AuctionManager.getInstance().registerObserver(this);
+
+            // 2. Build a comprehensive success payload containing the role
+            JsonObject response = new JsonObject();
+            response.addProperty("action", "LOGIN_SUCCESS");
+            response.addProperty("message", "Welcome back!");
+            response.addProperty("success", true);
+            response.addProperty("username", loginUser);
+            response.addProperty("role", userRole);
+
+            sendMessage(response.toString());
+            System.out.println("🔐 [SERVER]: @" + loginUser + " authenticated successfully as role: [" + userRole + "]");
+
         } else {
+            // Keep your original custom network message format for errors!
             sendMessage(gson.toJson(new NetworkMessage("LOGIN_ERROR", "Incorrect credentials.", false)));
         }
     }
 
-    private void handleRegisterAutoBid(JsonObject request) {
+    private void handelUpdateItem(JsonObject request){
+        int itemId = request.get("itemId").getAsInt();
+        String name = request.get("itemName").getAsString();
+        String type = request.get("itemType").getAsString();
+        String condition = request.get("itemCondition").getAsString();
+        String description = request.get("description").getAsString();
+
+        // Call the database manager to actually save the changes!
+        // Note: 'this.username' ensures they can only edit their own items
+        boolean success = DatabaseManager.updateItemDetails(itemId, this.username, name, type, condition, description);
+
+
+        JsonObject response = new JsonObject();
+        response.addProperty("action", "SELLER_UPDATE_ITEM_RESPONSE");
+        response.addProperty("success", success);
+
+        sendMessage(response.toString());
+    }
+
+    private void handleFetchAuction(JsonObject request){
+        if (!"ADMIN".equalsIgnoreCase(this.role)) {
+            System.err.println("Unauthorized access.");
+            return;
+        }
+
+        // 2. Fetch the data from the database
+        JsonArray auctionsList = DatabaseManager.getAllAuctionsForAdmin();
+
+        // 3. Send the payload back to the client
+        JsonObject response = new JsonObject();
+        response.addProperty("action", "ADMIN_FETCH_ALL_AUCTIONS_RESPONSE");
+        response.addProperty("success", true);
+        response.add("data", auctionsList);
+
+        sendMessage(response.toString());
+        System.out.println("📤 [SERVER]: Sent all active auctions to Admin.");    }
+
+    private void handleDeleteAuctions(JsonObject request){
+        if (!"ADMIN".equalsIgnoreCase(this.role)) {
+            System.err.println("Security Exception: Unauthorized auction deletion attempt!");
+            return;
+        }
+
+        int auctionId = request.get("auctionId").getAsInt();
+        boolean success = DatabaseManager.hardDeleteAuction(auctionId);
+
+        JsonObject response = new JsonObject();
+        response.addProperty("action", "ADMIN_DELETE_AUCTION_RESPONSE");
+        response.addProperty("success", success);
+        response.addProperty("auctionId", auctionId);
+
+        sendMessage(response.toString());
+    }
+
+
+    private void handleDeleteUser(JsonObject request){
+        if (!"ADMIN".equalsIgnoreCase(this.role)) {
+            System.err.println("🚨 Security Warning: Non-admin tried to execute a deletion command!");
+            return;
+        }
+        String targetUser = request.get("targetUsername").getAsString();
+
+        // Run the SQL command
+        boolean dbSuccess = DatabaseManager.deleteUser(targetUser);
+
+        JsonObject reply = new JsonObject();
+        reply.addProperty("action", "ADMIN_DELETE_USER_RESPONSE");
+        reply.addProperty("success", dbSuccess);
+        reply.addProperty("message", dbSuccess ? "User deleted successfully." : "Database failed to drop row.");
+
+        sendMessage(reply.toString());
+    }
+
+    private void handleFetchUser(JsonObject request){
+        if (!"ADMIN".equalsIgnoreCase(this.role)) {
+            System.err.println("❌ Security Warning: Unauthorized attempt to fetch structural user rows!");
+            return;
+        }
+
+        // Call your database manager to fetch the actual rows
+        com.google.gson.JsonArray userDatabaseData = DatabaseManager.getAllRegisteredUsers();
+
+        // Bundle it up into a response packet
+        com.google.gson.JsonObject reply = new com.google.gson.JsonObject();
+        reply.addProperty("action", "ADMIN_FETCH_USERS_RESPONSE");
+        reply.add("users", userDatabaseData);
+
+        sendMessage(reply.toString());
+    }
+    /**
+     * Handles the client's request to pull their notification history from the database.
+     */
+    private void handleFetchNotifHistory(JsonObject request) {
         try {
-            // Extract parameters from incoming client transmission envelope
-            JsonObject bidPayload = request.get("data").getAsJsonObject();
-            int auctionId = bidPayload.get("auctionId").getAsInt();
-            double maxBudget = bidPayload.get("maxBudget").getAsDouble();
+            String targetUser = request.get("username").getAsString();
 
-            // Safety check: Use the username attached to this specific client connection thread
-            String activeUser = (this.username != null) ? this.username : "Unknown";
+            // 1. Pull the rows straight from the database table
+            List<JsonObject> notifications = DatabaseManager.getNotificationsForUser(targetUser);
 
-            // Commit the auto-bid preference directly to your new Postgres table
+            // 2. Wrap them neatly into a response payload array
+            JsonObject responsePacket = new JsonObject();
+            responsePacket.addProperty("action", "NOTIF_HISTORY_RESPONSE");
 
-            // Notify client of success
-            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", "Auto-bid configured at $" + maxBudget, true)));
-            System.out.println("🤖 [SERVER LOG]: Successfully registered Auto-Bid for " + activeUser + " on Item " + auctionId);
+            com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+            if (notifications != null) {
+                for (JsonObject notif : notifications) {
+                    array.add(notif);
+                }
+            }
+            responsePacket.add("data", array);
+
+            // 3. Send it back down the socket stream to this specific client
+            sendMessage(responsePacket.toString());
+
+            System.out.println("📤 [SERVER]: Successfully streamed notification history back to @" + targetUser);
 
         } catch (Exception e) {
-            System.err.println("❌ [SERVER ERROR]: Failed to register auto-bid: " + e.getMessage());
-            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", "Failed to activate auto-bid: " + e.getMessage(), false)));
+            System.err.println("❌ [SERVER ERROR] Failed to fetch notification history: " + e.getMessage());
+            sendMessage(gson.toJson(new NetworkMessage("ERROR", "Failed to load notifications", false)));
+        }
+    }
+
+    private void handleRegisterAutoBid(JsonObject request) {
+        System.out.println("🚨 [TRACER]: handleRegisterAutoBid was just triggered!");
+        // 🌟 REMOVED: Direct database mutations from the network layer.
+        // Thread safety and sequential operations are now handled directly inside the memory lock pipeline.
+
+        String registrantName = "Unknown"; // Declared outside try block for visibility in catch scopes
+
+        try {
+            // 1. 🌟 FIX: Extract the nested JsonObject directly! No string conversion needed.
+            JsonObject autoBidPayload = request.getAsJsonObject("data");
+
+            int auctionId = autoBidPayload.get("auctionId").getAsInt();
+            double maxBudget = autoBidPayload.get("maxBudget").getAsDouble();
+
+            // Establish identity
+            registrantName = (this.username != null) ? this.username : autoBidPayload.get("username").getAsString();
+
+            // 2. Route to manager
+            AuctionManager.getInstance().submitAutoBid(auctionId, registrantName, maxBudget);
+
+            // 3. Respond
+            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", "Auto-bid configured successfully!", true)));
+        } catch (SelfBiddingException e) {
+            // Handle Policy Violation individually
+            System.err.println("⚠️ [POLICY VIOLATION] User '" + registrantName + "' attempted to set an auto-bid on their own item!");
+            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", e.getMessage(), false)));
+
+        } catch (AuctionClosedException | InvalidBidException e) {
+            // Catch standard operational exceptions and send their specific errors back to the UI
+            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", e.getMessage(), false)));
+
+        } catch (Exception e) {
+            // Failsafe catch-all block to prevent client-handler threads from crashing unexpectedly
+            System.err.println("[SERVER ERROR] Unexpected exception thrown inside handleRegisterAutoBid execution stream:");
+            e.printStackTrace();
+            sendMessage(gson.toJson(new NetworkMessage("AUTOBID_RESPONSE", "Server processing error encountered.", false)));
         }
     }
 
@@ -336,8 +512,29 @@ public class ClientHandler implements Runnable, AuctionObserver {
         }
     }
 
+    @Override
+    public void onAuctionClosed(int auctionId, String itemName, String winner, double finalPrice) {
+        JsonObject packet = new JsonObject();
+        packet.addProperty("action", "GLOBAL_ANNOUNCEMENT_CLOSED");
+        packet.addProperty("auctionId", auctionId);
+        packet.addProperty("itemName", itemName);
+        packet.addProperty("winner", winner);
+        packet.addProperty("finalPrice", finalPrice);
+        packet.addProperty("timeString", java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss")));
+
+        sendMessage(packet.toString());
+    }
+
+    @Override
+    public String getUsername() {
+        return this.username;
+    }
+
     public void sendMessage(String message) {
-        if (out != null) out.println(message);
+        if (out != null) {
+            out.println(message);
+            out.flush();
+        }
     }
 
     private void closeConnection() {

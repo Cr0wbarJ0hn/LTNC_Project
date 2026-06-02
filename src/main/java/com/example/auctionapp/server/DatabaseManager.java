@@ -9,6 +9,8 @@ import java.sql.ResultSet;
 import com.example.auctionapp.model.Items;
 import java.sql.*;
 import java.net.URI;
+import java.util.List;      //  Add this
+import java.util.ArrayList;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -22,6 +24,9 @@ import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import java.sql.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
@@ -48,9 +53,12 @@ public class DatabaseManager {
 
     public static void initializeActiveAuctionsInMemory() {
 
-        String query = "SELECT id, currentPrice, priceIncrement, endTime, " +
-                "(SELECT bidder FROM bids WHERE auctionId = auctions.id ORDER BY bidAmount DESC LIMIT 1) AS highestBidder " +
-                "FROM auctions WHERE endTime > NOW()";
+        // 🌟 1. FIXED SQL: Joined the 'items' table so we can grab the 'itemname', and added 'seller'
+        String query = "SELECT a.id, i.itemname, a.currentPrice, a.priceIncrement, a.endTime, a.seller, " +
+                "(SELECT bidder FROM bids WHERE auctionId = a.id ORDER BY bidAmount DESC LIMIT 1) AS highestBidder " +
+                "FROM auctions a " +
+                "JOIN items i ON a.itemid = i.id " +
+                "WHERE a.endTime > NOW()";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(query);
@@ -59,6 +67,11 @@ public class DatabaseManager {
             int count = 0;
             while (rs.next()) {
                 int id = rs.getInt("id");
+
+                // 🌟 2. Extract the newly requested fields from the ResultSet
+                String itemName = rs.getString("itemname");
+                String sellerName = rs.getString("seller");
+
                 double price = rs.getDouble("currentPrice");
                 double increment = rs.getDouble("priceIncrement");
                 java.sql.Timestamp endTs = rs.getTimestamp("endTime");
@@ -66,21 +79,28 @@ public class DatabaseManager {
 
                 LocalDateTime endTime = endTs.toLocalDateTime();
 
-                // Create the session object
-                AuctionSession session = new AuctionSession(id, price, increment, endTime, topBidder);
+                // 🌟 3. Create the session object with ALL 7 arguments in the correct order!
+                AuctionSession session = new AuctionSession(
+                        id,
+                        itemName,
+                        price,
+                        increment,
+                        endTime,
+                        topBidder,
+                        sellerName
+                );
 
                 // Push it into the manager's memory
                 AuctionManager.getInstance().addActiveAuction(session);
                 count++;
             }
-            System.out.println(" [SYSTEM] Successfully loaded " + count + " active auctions into server memory.");
+            System.out.println("✅ [SYSTEM] Successfully loaded " + count + " active auctions into server memory.");
 
         } catch (SQLException e) {
-            System.err.println(" [SYSTEM ERROR] Failed to load active auctions into memory:");
+            System.err.println("❌ [SYSTEM ERROR] Failed to load active auctions into memory:");
             e.printStackTrace();
         }
     }
-
     public static byte[] compressAndResizeImage(byte[] originalBytes, int targetWidth) {
         try {
             // 1. Convert byte array back into a live BufferedImage
@@ -248,7 +268,7 @@ public class DatabaseManager {
         // 🌟 DIAGNOSIS CHECK: Ensure column name case matches your SQL schema (e.g., currentPrice vs currentprice)
         String query = "SELECT currentPrice, priceIncrement, endTime, seller FROM auctions WHERE id = ? FOR UPDATE";
         String update = "UPDATE auctions SET currentPrice = ?, last_bidder = ? WHERE id = ?";
-        String insertBid = "INSERT INTO bids (auctionid, bidder, bidamount) VALUES (?, ?, ?)";
+        String insertBid = "INSERT INTO bids (auctionid, bidder, bidamount, bidTime) VALUES (?, ?, ?, ?)";
 
         System.out.println("🔍 [DB TRACE]: Starting transaction for Auction ID: " + auctionId + " by User: " + username);
 
@@ -295,6 +315,7 @@ public class DatabaseManager {
                             // 🌟 Parameter 3: The third '?' (id) - THIS IS THE ONE YOU ARE MISSING!
                             updateStmt.setInt(3, auctionId);
 
+
                             int rowsAffected = updateStmt.executeUpdate();
                             System.out.println("🚀 [DB TRACE]: Rows affected: " + rowsAffected);
                         }
@@ -302,6 +323,8 @@ public class DatabaseManager {
                             insertStmt.setInt(1, auctionId);
                             insertStmt.setString(2, username);
                             insertStmt.setDouble(3, proposedBid);
+                            java.sql.Timestamp currentSystemTime = new java.sql.Timestamp(System.currentTimeMillis());
+                            insertStmt.setTimestamp(4, currentSystemTime);
                             int bidRowsAffected = insertStmt.executeUpdate();
                             System.out.println("📝 [DB TRACE]: Bids table rows inserted: " + bidRowsAffected);
                         }
@@ -327,9 +350,130 @@ public class DatabaseManager {
             }
         }
     }
+
+    public static void registerAutoBid(int auctionId, String username, double maxBudget) throws SQLException {
+        String sql = "INSERT INTO auto_bids (auction_id, username, max_budget) VALUES (?, ?, ?) " +
+                "ON CONFLICT (auction_id, username) " +
+                "DO UPDATE SET max_budget = EXCLUDED.max_budget";
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(true);
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, auctionId);
+                pstmt.setString(2, username);
+                pstmt.setDouble(3, maxBudget);
+                pstmt.executeUpdate();
+                System.out.println("🤖 [DB TRACE]: Budget configuration saved to disk.");
+            }
+        }
+    }
+
+    public static boolean executeAutoBidCounterTransaction(int auctionId) throws SQLException {
+        String query = "SELECT currentPrice, priceIncrement, endTime, last_bidder FROM auctions WHERE id = ? FOR UPDATE";
+        String update = "UPDATE auctions SET currentPrice = ?, last_bidder = ? WHERE id = ?";
+
+        // 🌟 FIXED: Added 'bidTime' and a fourth '?' placeholder to match your manual query pattern
+        String insertBid = "INSERT INTO bids (auctionid, bidder, bidamount, bidTime) VALUES (?, ?, ?, ?)";
+
+        // Finds the highest configured budget belonging to a COMPETITOR (someone who isn't the current highest bidder)
+        String findAutoBid = "SELECT username, max_budget FROM auto_bids WHERE auction_id = ? AND username != ? ORDER BY max_budget DESC LIMIT 1";
+
+        System.out.println("🤖 [DB TRACE]: Checking for automatic proxy counter-bids on Auction ID: " + auctionId);
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement checkStmt = conn.prepareStatement(query)) {
+                checkStmt.setInt(1, auctionId);
+
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    if (rs.next()) {
+                        double currentPrice = rs.getDouble("currentPrice");
+                        double increment = rs.getDouble("priceIncrement");
+                        java.sql.Timestamp endTime = rs.getTimestamp("endTime");
+                        String currentLeader = rs.getString("last_bidder");
+
+                        // 1. Validation: Don't trigger auto-bids if the auction has closed
+                        if (endTime.getTime() < System.currentTimeMillis() || currentLeader == null) {
+                            conn.rollback();
+                            return false;
+                        }
+
+                        // 2. Lookup competitor auto-bids
+                        try (PreparedStatement autoStmt = conn.prepareStatement(findAutoBid)) {
+                            autoStmt.setInt(1, auctionId);
+                            autoStmt.setString(2, currentLeader);
+
+                            try (ResultSet autoRs = autoStmt.executeQuery()) {
+                                if (autoRs.next()) {
+                                    String autoBidder = autoRs.getString("username");
+                                    double maxBudget = autoRs.getDouble("max_budget");
+
+                                    double finalCounterPrice = currentPrice + increment;
+
+                                    // Case A: Budget can easily cover a full incremental increase step
+                                    if (maxBudget >= finalCounterPrice) {
+                                        // Price stays at finalCounterPrice
+
+                                        // Case B: Budget beats current price but cannot fulfill a full increment step
+                                    } else if (maxBudget > currentPrice) {
+                                        finalCounterPrice = maxBudget;
+
+                                        // Case C: Current price outmatches or equals their max budget limit
+                                    } else {
+                                        conn.rollback(); // No valid counter-bids found
+                                        return false;
+                                    }
+
+                                    // 3. EXECUTE WRITES (Exactly matching your manual code pattern)
+                                    try (PreparedStatement updateStmt = conn.prepareStatement(update)) {
+                                        updateStmt.setDouble(1, finalCounterPrice);
+                                        updateStmt.setString(2, autoBidder);
+                                        updateStmt.setInt(3, auctionId);
+                                        updateStmt.executeUpdate();
+                                    }
+
+                                    try (PreparedStatement insertStmt = conn.prepareStatement(insertBid)) {
+                                        insertStmt.setInt(1, auctionId);
+                                        insertStmt.setString(2, autoBidder);
+                                        insertStmt.setDouble(3, finalCounterPrice);
+
+                                        // 🌟 FIXED: Pin the exact system clock time onto the auto-bid record
+                                        java.sql.Timestamp currentSystemTime = new java.sql.Timestamp(System.currentTimeMillis());
+                                        insertStmt.setTimestamp(4, currentSystemTime);
+
+                                        insertStmt.executeUpdate();
+                                    }
+
+                                    conn.commit();
+                                    System.out.println("🤖 [DB TRACE]: Auto-bid committed successfully. New Leader: " + autoBidder + " at $" + finalCounterPrice);
+                                    return true; // A counter-bid occurred!
+                                }
+                            }
+                        }
+
+                        // No auto-bids exist for opponents
+                        conn.rollback();
+                        return false;
+
+                    } else {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+            } catch (Exception innerException) {
+                System.err.println("🤖 [DB CRITICAL ERROR]: Exception inside auto-bid chain: " + innerException.getMessage());
+                innerException.printStackTrace();
+                conn.rollback();
+                throw innerException;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
     public static String fetchAuctionDetailById(int auctionId) {
         JsonObject auction = new JsonObject();
-
         // We use a subquery to grab the highest bidder directly from your 'bids' table!
         String sql = "SELECT a.id, i.itemname, a.startingprice, a.currentprice, " +
                 "i.itemcondition, i.imagepath, i.description, a.seller, " +
@@ -365,6 +509,42 @@ public class DatabaseManager {
                     String lastBidder = rs.getString("leading_bidder");
                     auction.addProperty("leadingBidder", lastBidder != null ? lastBidder : "No bids yet");
 
+                    com.google.gson.JsonArray priceHistoryArray = new com.google.gson.JsonArray();
+                    String historySql = "SELECT bidAmount, bidTime FROM bids WHERE auctionId = ? ORDER BY bidAmount ASC";
+
+                    try (PreparedStatement historyStmt = conn.prepareStatement(historySql)) {
+                        historyStmt.setInt(1, auctionId);
+
+                        try (ResultSet historyRs = historyStmt.executeQuery()) {
+                            java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+
+                            while (historyRs.next()) {
+                                double price = historyRs.getDouble("bidAmount");
+                                java.sql.Timestamp timestamp = historyRs.getTimestamp("bidTime");
+
+                                // Safely convert the timestamp to our chart's preferred text format
+                                String formattedTime = "00:00:00";
+                                if (timestamp != null) {
+                                    formattedTime = timestamp.toLocalDateTime().format(timeFormatter);
+                                }
+
+                                // Create the individual coordinate point object
+                                JsonObject pointObj = new JsonObject();
+                                pointObj.addProperty("time", formattedTime);
+                                pointObj.addProperty("price", price);
+
+                                // Push the coordinate point into our tracking array
+                                priceHistoryArray.add(pointObj);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[DATABASE WARNING] Could not compile chart plot points: " + e.getMessage());
+                    }
+
+                    // Inject the entire history lineup directly into the primary JSON payload response
+                    auction.add("priceHistory", priceHistoryArray);
+                    // =================================================================
+
                     return auction.toString();
                 }
             }
@@ -373,6 +553,18 @@ public class DatabaseManager {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static void updateAuctionEndTime(int auctionId, LocalDateTime newEndTime) {
+        String sql = "UPDATE auctions SET endtime = ? WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setTimestamp(1, java.sql.Timestamp.valueOf(newEndTime));
+            stmt.setInt(2, auctionId);
+            stmt.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static String fetchAuctionsByBidder(String username) {
@@ -449,6 +641,8 @@ public class DatabaseManager {
         }
         return false;
     }
+
+
 
     public static String fetchAuctionsByCategory(String category) {
         JsonArray jsonArray = new JsonArray();
@@ -554,7 +748,6 @@ public class DatabaseManager {
 
     public static void insertItemAndAuction(Items item, String seller, double initialPrice, double priceIncrement, java.sql.Timestamp endTime) {
         String insertItemSql = "INSERT INTO items (itemName, itemType, itemCondition, description, imagePath) VALUES (?, ?, ?, ?, ?)";
-        // Ensure table and column casings match your DB schema (PostgreSQL defaults to lower case unless quoted)
         String insertAuctionSql = "INSERT INTO auctions (itemId, seller, startingPrice, currentPrice, priceIncrement, endTime, active) VALUES (?, ?, ?, ?, ?, ?, TRUE)";
 
         try (Connection conn = getConnection()) {
@@ -564,7 +757,6 @@ public class DatabaseManager {
 
             if (databaseImagePath != null && !databaseImagePath.startsWith("http")) {
                 try {
-                    // --- FIX 1: STRIP BASE64 DATA PREFIXES AND WHITESPACE ---
                     if (databaseImagePath.contains(",")) {
                         databaseImagePath = databaseImagePath.substring(databaseImagePath.indexOf(",") + 1);
                     }
@@ -600,7 +792,6 @@ public class DatabaseManager {
             if (rs.next()) {
                 int generatedItemId = rs.getInt(1);
 
-                // 🌟 CHANGE A: Added Statement.RETURN_GENERATED_KEYS here so we can grab the generated auction ID
                 PreparedStatement auctionStmt = conn.prepareStatement(insertAuctionSql, Statement.RETURN_GENERATED_KEYS);
                 auctionStmt.setInt(1, generatedItemId);
                 auctionStmt.setString(2, seller);
@@ -610,32 +801,32 @@ public class DatabaseManager {
                 auctionStmt.setTimestamp(6, endTime);
                 auctionStmt.executeUpdate();
 
-                // 🌟 CHANGE B: Extract the newly created auction ID and build our live RAM Session
                 ResultSet rsAuction = auctionStmt.getGeneratedKeys();
                 if (rsAuction.next()) {
                     int generatedAuctionId = rsAuction.getInt(1);
 
-                    // Convert the incoming java.sql.Timestamp cleanly over to java.time.LocalDateTime
+                    // Convert incoming java.sql.Timestamp to java.time.LocalDateTime
                     LocalDateTime endTimeLocal = endTime.toLocalDateTime();
 
-                    // Instantiate the session matching our system constraints
+                    // 🌟 THE FIX: Pass all 7 required arguments into the updated constructor!
                     AuctionSession newSession = new AuctionSession(
                             generatedAuctionId,
-                            initialPrice,      // Starting price acts as the baseline price
-                            priceIncrement,
-                            endTimeLocal,
-                            null               // Brand new item has no highest bidder yet!
+                            item.getName(),    // 1. Added: Item Name
+                            initialPrice,      // 2. Starting Price
+                            priceIncrement,    // 3. Increment
+                            endTimeLocal,      // 4. End Time
+                            null,              // 5. No highest bidder yet
+                            seller             // 6. Added: Seller Name (Host)
                     );
 
-                    // 🌟 INJECT DIRECTLY INTO LIVE SERVER MEMORY:
-                    // This makes the item immediately available for bidding across all client sockets!
+                    // INJECT DIRECTLY INTO LIVE SERVER MEMORY:
                     AuctionManager.getInstance().addActiveAuction(newSession);
 
-                    System.out.println("Success: Data saved to Supabase & synchronized to active server RAM! (Auction ID: " + generatedAuctionId + ")");
+                    System.out.println("✅ Success: Data saved to Supabase & synchronized to active server RAM! (Auction ID: " + generatedAuctionId + ")");
                 }
             }
         } catch (SQLException e) {
-            System.err.println(" Database operation failed inside insertItemAndAuction:");
+            System.err.println("❌ Database operation failed inside insertItemAndAuction:");
             e.printStackTrace();
         }
     }
@@ -651,18 +842,194 @@ public class DatabaseManager {
         }
     }
 
-    public static boolean verifyLogin(String username, String password) {
-        String query = "SELECT * FROM members WHERE username = ? AND password = ?";
+    // Inside Server's DatabaseManager.java
+
+    public static boolean deleteUser(String username) {
+        // 🌟 CHANGED: From DELETE to UPDATE
+        String query = "UPDATE members SET status = 'BANNED' WHERE username = ?";
+
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
+
             pstmt.setString(1, username);
-            pstmt.setString(2, password);
-            ResultSet rs = pstmt.executeQuery();
-            return rs.next();
+            int rowsAffected = pstmt.executeUpdate();
+
+            System.out.println("🔒 [DB]: Soft-deleted user @" + username + ". Rows updated: " + rowsAffected);
+            return rowsAffected > 0;
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Database soft-deletion failure: " + e.getMessage());
             return false;
         }
+    }
+
+    public static String verifyLoginAndGetRole(String username, String password) {
+        // Only query the column we need for efficiency
+        String query = "SELECT role FROM members WHERE username = ? AND password = ? AND status = 'ACTIVE'";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setString(1, username);
+            pstmt.setString(2, password);
+
+            ResultSet rs = pstmt.executeQuery();
+
+            // If a row is found, the credentials match!
+            if (rs.next()) {
+                return rs.getString("role"); // Returns "USER" or "ADMIN"
+            }
+
+            // If no row is found, login failed
+            return null;
+
+        } catch (SQLException e) {
+            System.err.println("Database login error: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public static boolean hardDeleteAuction(int auctionId) {
+        String query = "DELETE FROM auctions WHERE id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, auctionId);
+            int rowsAffected = pstmt.executeUpdate();
+
+            System.out.println("💥 [DB]: Auction #" + auctionId + " and all its linked bids have been deleted.");
+            return rowsAffected > 0;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Database failure while executing cascading delete: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static JsonArray getAllAuctionsForAdmin() {
+        JsonArray auctionsArray = new JsonArray();
+
+        // 🌟 Added: WHERE a.active = true to filter by your boolean column
+        String query = "SELECT a.id, i.itemname, a.currentprice, a.seller " +
+                "FROM auctions a " +
+                "INNER JOIN items i ON a.itemid = i.id " +
+                "WHERE a.active = true";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                JsonObject row = new JsonObject();
+                row.addProperty("id", rs.getInt("id"));
+                row.addProperty("itemName", rs.getString("itemname"));
+                row.addProperty("currentPrice", rs.getDouble("currentprice"));
+                row.addProperty("seller", rs.getString("seller"));
+
+                auctionsArray.add(row);
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ Database fetch failed: " + e.getMessage());
+        }
+        return auctionsArray;
+    }
+
+    // Inside DatabaseManager.java
+
+    // 1. Save a new notification record to disk
+    public static void createNotification(String recipient, String type, String title, String message, int relatedId) {
+        String sql = "INSERT INTO notifications (recipient, type, title, message, related_id) VALUES (?, ?, ?, ?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, recipient);
+            stmt.setString(2, type);
+            stmt.setString(3, title);
+            stmt.setString(4, message);
+            stmt.setInt(5, relatedId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("❌ Failed to log persistent notification:");
+            e.printStackTrace();
+        }
+    }
+
+    // 💾 Place this inside your SERVER's DatabaseManager.java class
+    public static boolean updateItemDetails(int itemId, String sellerUsername, String name, String type, String condition, String description) {
+        String query = "UPDATE items i " +
+                "SET itemname = ?, itemtype = ?, itemcondition = ?, description = ? " +
+                "FROM auctions a " +
+                "WHERE i.id = a.itemid AND i.id = ? AND a.seller = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setString(1, name);
+            pstmt.setString(2, type);
+            pstmt.setString(3, condition);
+            pstmt.setString(4, description);
+            pstmt.setInt(5, itemId);
+            pstmt.setString(6, sellerUsername);
+
+            int rowsUpdated = pstmt.executeUpdate();
+            System.out.println("💾 [DB]: Executed item update query. Rows affected: " + rowsUpdated);
+            return rowsUpdated > 0;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Database item modification failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Inside your Server's DatabaseManager.java:
+
+    // Inside Server's DatabaseManager.java
+
+    public static com.google.gson.JsonArray getAllRegisteredUsers() {
+        com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+        // 🌟 ADDED: status inside the SELECT query
+        String query = "SELECT email, username, role, status FROM members ORDER BY username ASC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                com.google.gson.JsonObject row = new com.google.gson.JsonObject();
+                row.addProperty("email", rs.getString("email"));
+                row.addProperty("username", rs.getString("username"));
+                row.addProperty("role", rs.getString("role"));
+                row.addProperty("status", rs.getString("status")); // 🌟 Send it up!
+                array.add(row);
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to query user rows: " + e.getMessage());
+        }
+        return array;
+    }
+
+
+    public static List<com.google.gson.JsonObject> getNotificationsForUser(String username) {
+        List<com.google.gson.JsonObject> list = new java.util.ArrayList<>();
+        String sql = "SELECT type, title, message, created_at FROM notifications WHERE recipient = ? ORDER BY created_at DESC";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+                    obj.addProperty("type", rs.getString("type"));
+                    obj.addProperty("title", rs.getString("title"));
+                    obj.addProperty("message", rs.getString("message"));
+                    obj.addProperty("time", rs.getTimestamp("created_at").toString());
+                    list.add(obj);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     public static void main(String[] args) {

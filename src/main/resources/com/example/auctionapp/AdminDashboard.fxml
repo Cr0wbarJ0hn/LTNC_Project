@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.text.Font?>
+
+<StackPane fx:id="rootPane" style="-fx-background-color: #13131B;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.AdminDashboardController">
+   <children>
+      <Group>
+         <children>
+            <BorderPane fx:id="mainContent" layoutX="14.0" layoutY="23.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1200.0" prefWidth="1900.0" style="-fx-background-color: #FFFFFF;" styleClass="modern-card" stylesheets="@../../../style.css">
+               <left>
+                  <Pane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="1200.0" prefWidth="303.0" style="-fx-background-color: #20202E;" stylesheets="@../../../style.css" BorderPane.alignment="CENTER">
+                     <children>
+                        <ToggleButton fx:id="UserManagementButton" alignment="CENTER_LEFT" graphicTextGap="5.0" layoutX="28.0" layoutY="174.0" mnemonicParsing="false" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="User management">
+                           <toggleGroup>
+                              <ToggleGroup fx:id="navGroup" />
+                           </toggleGroup>
+                           <font>
+                              <Font name="Berlin Sans FB Demi Bold" size="12.0" />
+                           </font>
+                           <graphic>
+                              <HBox prefHeight="5.0" prefWidth="24.0">
+                                 <children>
+                                    <Region maxHeight="29.0" maxWidth="33.0" minHeight="22.0" prefHeight="29.0" prefWidth="30.0">
+                                       <styleClass>
+                                          <String fx:value="icon-user" />
+                                          <String fx:value="nav-icon" />
+                                       </styleClass>
+                                    </Region>
+                                 </children>
+                              </HBox>
+                           </graphic>
+                        </ToggleButton>
+                        <ToggleButton fx:id="AuctionsManagementButton" graphicTextGap="12.0" layoutX="28.0" layoutY="254.0" mnemonicParsing="false" prefHeight="66.0" prefWidth="245.0" styleClass="nav-button" stylesheets="@../../../style.css" text="Auctions management" toggleGroup="$navGroup">
+                           <graphic>
+                              <HBox prefHeight="24.0" prefWidth="23.0">
+                                 <children>
+                                    <Region maxHeight="30.0" maxWidth="29.0" prefHeight="30.0" prefWidth="29.0">
+                                       <styleClass>
+                                          <String fx:value="nav-icon" />
+                                          <String fx:value="icon-gavel" />
+                                       </styleClass>
+                                    </Region>
+                                 </children>
+                              </HBox>
+                           </graphic>
+                        </ToggleButton>
+                        <Label graphicTextGap="0.0" layoutX="20.0" layoutY="33.0" prefHeight="100.0" prefWidth="266.0" text="UET auction house" textAlignment="CENTER" textFill="#c3c6e4" wrapText="true">
+                           <font>
+                              <Font name="Segoe UI Bold" size="30.0" />
+                           </font>
+                           <graphic>
+                              <ImageView fitHeight="67.0" fitWidth="65.0">
+                                 <image>
+                                    <Image url="@Gemini_Generated_Image_x5bve4x5bve4x5bv-Photoroom.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic>
+                        </Label>
+                        <Line endX="282.0" endY="153.29290771484375" startX="19.0" startY="153.29290771484375" stroke="#9aa6b2" />
+                     </children>
+                  </Pane>
+               </left>
+               <center>
+                  <StackPane fx:id="centerContentArea" prefHeight="1200.0" prefWidth="864.0" style="-fx-background-color: #13131B;" BorderPane.alignment="CENTER">
+                     <BorderPane.margin>
+                        <Insets />
+                     </BorderPane.margin>
+                  </StackPane>
+               </center>
+            </BorderPane>
+         </children>
+      </Group>
+   </children>
+</StackPane>

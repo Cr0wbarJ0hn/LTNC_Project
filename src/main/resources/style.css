@@ -186,6 +186,9 @@
 
     -fx-shape: "M180-204.62v-59.99h72.31v-298.47q0-80.69 49.81-142.69 49.8-62 127.88-79.31V-810q0-20.83 14.57-35.42Q459.14-860 479.95-860q20.82 0 35.43 14.58Q530-830.83 530-810v24.92q78.08 17.31 127.88 79.31 49.81 62 49.81 142.69v298.47H780v59.99H180Zm300-293.07Zm-.07 405.38q-29.85 0-51.04-21.24-21.2-21.24-21.2-51.07h144.62q0 29.93-21.26 51.12-21.26 21.19-51.12 21.19Zm-167.62-172.3h335.38v-298.47q0-69.46-49.11-118.57-49.12-49.12-118.58-49.12-69.46 0-118.58 49.12-49.11 49.11-49.11 118.57v298.47Z";
 }
+.icon-user{
+    -fx-shape: "M367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Zm80-80h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Zm0 400Z"
+}
 
 
 .nav-button:hover .nav-icon {
@@ -1010,5 +1013,72 @@
     -fx-border-width: 2px; /* Makes the border slightly thicker */
     /* This next line removes JavaFX's ugly default focus ring */
     -fx-background-insets: 0, 0, 0, 0;
+}
+.skeleton-pulse {
+    -fx-background-color: #20202E;
+    -fx-background-radius: 10px;
+}
+@keyframes pulse {
+    0% { -fx-opacity: 0.4; }
+    50% { -fx-opacity: 0.8; }
+    100% { -fx-opacity: 0.4; }
+}
+.skeleton-pulse {
+    -fx-animation: pulse 1.5s infinite ease-in-out;
+}
+/* TableView Container */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #2b2b3c;
+    -fx-border-radius: 5;
+}
+
+/* Header row */
+.table-view .column-header-background {
+    -fx-background-color: #20202E;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-size: 40;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #9aa6b2;
+    -fx-font-weight: bold;
+}
+
+/* Table Rows */
+.table-row-cell {
+    -fx-background-color: #13131B;
+    -fx-border-color: #20202E;
+    -fx-border-width: 0 0 1 0;
+    -fx-text-fill: white;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #1a1a26;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #3b3b54;
+}
+
+.table-cell {
+    -fx-text-fill: white;
+    -fx-alignment: center-left;
+    -fx-padding: 10;
+}
+
+/* Action Buttons */
+.action-button {
+    -fx-background-color: #3b3b54;
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-padding: 8 15;
+    -fx-cursor: hand;
+}
+.action-button:hover {
+    -fx-background-color: #4b4b6e;
 }
 

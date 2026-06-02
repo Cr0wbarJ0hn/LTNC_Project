@@ -34,8 +34,6 @@ public class HomeController {
     @FXML private StackPane bookCard;
     @FXML private Button logoutButton;
 
-
-
     private void addHoverAnimation(StackPane card) {
         // Create the zoom-in animation (takes 0.2 seconds)
         ScaleTransition scaleUp = new ScaleTransition(Duration.millis(200), card);
@@ -99,9 +97,6 @@ public class HomeController {
         }
     }
 
-
-
-
     private void applyRoundedCorners(StackPane card) {
         // 1. Safety check to prevent the crash you just experienced!
         if (card == null) {
@@ -137,12 +132,6 @@ public class HomeController {
 
 
 
-
-
-
-
-
-
         String loggedInUser = UserSession.getUsername();
         welcomeLabel.setText("Welcome back, " + loggedInUser + "!");
         addHoverAnimation(furnitureCard);
@@ -172,19 +161,16 @@ public class HomeController {
                 out.flush();
 
                 // 4. Wipe the local user data from client memory
-                UserSession.setUsername(null);
+                UserSession.cleanUserSession();
             }
-
             // 5. Capture the current window (Stage) from the button click event
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-
-
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/hello-view.fxml"));
             Parent root = loader.load();
 
             Scene scene = new Scene(root, 1265, 875); // Adjust dimensions to match your login screen
             stage.setScene(scene);
-            stage.setTitle("UET Auction House - Secure Login");
+            stage.setTitle("UET Auction House");
             stage.centerOnScreen();
             stage.show();
 
@@ -219,24 +205,6 @@ public class HomeController {
     @FXML
     public void browseBooks() {
         UserSession.setCurrentCategory("Books");
-        openBrowseScreen();
-    }
-
-    @FXML
-    public void browseCollectables() {
-        UserSession.setCurrentCategory("Collectables");
-        openBrowseScreen();
-    }
-
-    @FXML
-    public void browseSports() {
-        UserSession.setCurrentCategory("Sports");
-        openBrowseScreen();
-    }
-
-    @FXML
-    public void browseArt() {
-        UserSession.setCurrentCategory("Art");
         openBrowseScreen();
     }
 }

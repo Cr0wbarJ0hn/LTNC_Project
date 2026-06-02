@@ -1,6 +1,7 @@
 package com.example.auctionapp.controller;
 
 import com.example.auctionapp.model.UserSession;
+import com.google.gson.JsonArray;
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Hyperlink;
@@ -24,9 +25,12 @@ import java.io.PrintWriter;
 import java.util.Base64;
 
 public class DetailedBidController {
+    private XYChart.Series<String, Number> priceSeries;
 
     @FXML
     private Label DetailTimeLeft;
+
+    private static final java.util.Map<Integer, java.util.LinkedHashMap<String, Double>> chartMemory = new java.util.HashMap<>();
     private int currentAuctionId;
     private String currentUsername = UserSession.getUsername();
 
@@ -79,6 +83,7 @@ public class DetailedBidController {
 
     @FXML
     public void initialize() {
+
         activeDetailBidsScreen = this; // Register screen
 
         // 🧼 AUTO-CLEANUP: Clear the active tracker when leaving this screen
@@ -90,7 +95,6 @@ public class DetailedBidController {
                 }
             });
         }
-
         autoBidPane.visibleProperty().bind(autoBidSwitch.selectedProperty());
         autoBidPane.managedProperty().bind(autoBidPane.visibleProperty());
         manualBidPane.visibleProperty().bind(autoBidSwitch.selectedProperty().not());
@@ -131,7 +135,7 @@ public class DetailedBidController {
             System.out.println("Image error.");
         }
 
-        setupPlaceholderChart();
+
         fetchLiveAuctionData(auctionId);
     }
 
@@ -163,10 +167,13 @@ public class DetailedBidController {
             out.println(new Gson().toJson(request));
             out.flush();
 
+
+            autoBidTextField.clear();
             autoBidTextField.setPromptText("Sending request to server...");
-            autoBidTextField.setStyle("-fx-text-fill: blue;");
+            autoBidTextField.setStyle("-fx-text-fill: #170C79; -fx-prompt-text-fill: #170C79;");
 
         } catch (NumberFormatException e) {
+            autoBidTextField.clear();
             autoBidTextField.setPromptText("Invalid number format! Use digits only.");
             autoBidTextField.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
         }
@@ -202,35 +209,82 @@ public class DetailedBidController {
 
             UserSession.getOut().println(clientGson.toJson(messageEnvelope));
             UserSession.getOut().flush();
+            manualBidInput.clear();
             manualBidInput.setPromptText("Sending request to server...");
-            manualBidInput.setStyle("-fx-text-fill: blue;");
+            manualBidInput.setStyle("-fx-text-fill: #170C79; -fx-prompt-text-fill: #170C79;");
         } catch (NumberFormatException nfe) {
+            manualBidInput.clear();
             manualBidInput.setPromptText("Enter valid number!");
             manualBidInput.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
         }
     }
 
-    // 🌟 NEW METHOD: Called by Global Router to display the initial live stats data
-    public void handleAuctionDetailResponse(String jsonData) {
-        JsonObject obj = JsonParser.parseString(jsonData).getAsJsonObject();
-        String leader = obj.has("leadingBidder") ? obj.get("leadingBidder").getAsString() : "No bids yet";
-        double livePrice = obj.has("currentPrice") ? obj.get("currentPrice").getAsDouble() : 0.0;
+    public void handleAuctionDetailResponse(String jsonPayloadData) {
+        try {
+            // 1. Parse the incoming JSON data
+            JsonObject auctionData = JsonParser.parseString(jsonPayloadData).getAsJsonObject();
 
-        if (leader == null || leader.trim().isEmpty() || leader.equals("No bids yet")) {
-            leadingBidder.setText("No bids yet");
-            leadingBidder.setStyle("-fx-text-fill: #888888;");
-        } else {
-            leadingBidder.setText(leader);
-            leadingBidder.setStyle("-fx-text-fill: #34d399;");
-        }
+            double currentPrice = auctionData.get("currentPrice").getAsDouble();
+            int currentId = auctionData.get("id").getAsInt();
 
-        if (livePrice > 0.0) {
-            DetailPrice.setText("$" + String.format("%.2f", livePrice));
+            // Update standard labels
+            DetailPrice.setText("$" + String.format("%.2f", currentPrice));
+
+            if (auctionData.has("leadingBidder")) {
+                String leader = auctionData.get("leadingBidder").getAsString();
+                leadingBidder.setText(leader);
+                if (leader != null && !leader.equals("No bids yet") && !leader.isEmpty()) {
+                    leadingBidder.setStyle("-fx-text-fill: #34d399;");
+                } else {
+                    leadingBidder.setStyle("-fx-text-fill: #ffffff;");
+                }
+            }
+
+            // 2. 🌟 THE ANIMATION FIX: Turn off animations completely!
+            // Leaving animations ON is the #1 reason JavaFX stamps cluster in the corner.
+            priceHistoryChart.setAnimated(false);
+            priceHistoryChart.getData().clear();
+
+            // 3. Create a fresh, clean series container
+            priceSeries = new XYChart.Series<>();
+            priceSeries.setName("Price Timeline ($)");
+
+            // 4. Extract points from the database history payload
+            java.util.LinkedHashMap<String, Double> databaseHistoryPoints = new java.util.LinkedHashMap<>();
+            if (auctionData.has("priceHistory") && !auctionData.get("priceHistory").isJsonNull()) {
+                JsonArray historyArray = auctionData.getAsJsonArray("priceHistory");
+
+                for (com.google.gson.JsonElement element : historyArray) {
+                    JsonObject bidRecord = element.getAsJsonObject();
+                    String realDatabaseTime = bidRecord.get("time").getAsString();
+                    double realDatabaseAmount = bidRecord.get("price").getAsDouble();
+
+                    databaseHistoryPoints.put(realDatabaseTime, realDatabaseAmount);
+                }
+            }
+
+            // 5. 🌟 THE LAYOUT FIX: Populate the series data points FIRST.
+            // Do NOT manually add or clear things from xAxis.getCategories().
+            // Manually manipulating categories breaks the automatic spacing layout engine.
+            for (java.util.Map.Entry<String, Double> entry : databaseHistoryPoints.entrySet()) {
+                priceSeries.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue()));
+            }
+
+            // 6. 🌟 THE PUNCHLINE: Pin the fully populated series to the chart container last!
+            // This forces JavaFX to look at the total number of points and spread them out
+            // evenly across the actual width of your UI container.
+            priceHistoryChart.getData().add(priceSeries);
+
+            // Save to cache memory bank
+            chartMemory.put(currentId, databaseHistoryPoints);
+            System.out.println("✅ [CHART]: Rendered " + databaseHistoryPoints.size() + " beautifully spaced points.");
+
+        } catch (Exception e) {
+            System.err.println("❌ [CHART ERROR]: Layout positioning exception caught.");
+            e.printStackTrace();
         }
     }
 
-    // 🌟 NEW METHOD: Called by Global Router when this specific user bids manually
-    // Inside DetailedBidController.java
 
     public void handleBidResponse(boolean success, String serverMessage, double attemptedAmount) {
         if (success) {
@@ -250,10 +304,17 @@ public class DetailedBidController {
     }
 
     public void handleAutoBidResponse(boolean success, String message) {
-        autoBidTextField.setPromptText(message);
         if (success) {
-            autoBidTextField.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
+            // Clear input and show success styling in Emerald Green 🟢
+            autoBidTextField.clear();
+            autoBidTextField.setPromptText("Auto-Bid Configured!");
+            autoBidTextField.setStyle("-fx-prompt-text-fill: #27ae60; -fx-border-color: #27ae60;");
+
+
         } else {
+
+            autoBidTextField.clear();
+            autoBidTextField.setPromptText(message);
             autoBidTextField.setStyle("-fx-prompt-text-fill: #e74c3c; -fx-border-color: #e74c3c;");
         }
     }
@@ -261,20 +322,29 @@ public class DetailedBidController {
 
     // 🌟 NEW METHOD: Called by Global Router when *any* client changes the price in real-time
     public void handleRealtimePriceBroadcast(double price, String highestBidderName) {
+        Platform.runLater(() -> {
         DetailPrice.setText("$" + String.format("%.2f", price));
         if (highestBidderName != null && !highestBidderName.isEmpty()) {
             leadingBidder.setText(highestBidderName);
             leadingBidder.setStyle("-fx-text-fill: #34d399;");
-        }
-    }
+            // 3. 🌟 PLOT TO CHART
+            if (priceSeries != null) {
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+                String currentBidTime = java.time.LocalTime.now().format(formatter);
 
-    private void setupPlaceholderChart() {
-        priceHistoryChart.getData().clear();
-        XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.getData().add(new XYChart.Data<>("Start", 500));
-        series.getData().add(new XYChart.Data<>("Day 2", 750));
-        series.getData().add(new XYChart.Data<>("Today", 1000));
-        priceHistoryChart.getData().add(series);
+                // Add to the visual screen
+                priceSeries.getData().add(new XYChart.Data<>(currentBidTime, price));
+
+                // 🌟 NEW: Save it to the memory bank so it survives screen changes!
+                int currentId = getCurrentAuctionId();
+                if (chartMemory.containsKey(currentId)) {
+                    chartMemory.get(currentId).put(currentBidTime, price);
+                }
+
+                System.out.println("📈 [CHART]: Appended new point -> " + currentBidTime + " at $" + price);
+            }
+        }
+        });
     }
 
     @FXML

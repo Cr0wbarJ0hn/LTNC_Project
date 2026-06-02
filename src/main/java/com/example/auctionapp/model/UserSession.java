@@ -4,26 +4,36 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 
 public class UserSession {
-    // The static variable that holds the username globally
-    private static String loggedInUsername;
+    // 🌟 Unified polymorphic object tracking (handles both User and Admin)
+    private static User currentUser;
     private static PrintWriter out;
     private static BufferedReader in;
     private static String currentCategory = "All";
 
-    // Call this when the user successfully logs in
-    public static void setUsername(String username) {
-        loggedInUsername = username;
+
+    public static void setSession(User user, PrintWriter outputStream) {
+        currentUser = user;
+        out = outputStream;
     }
 
 
-    // Call this from any screen when you need to know who is logged in
     public static String getUsername() {
-        return loggedInUsername;
+        return currentUser != null ? currentUser.getUsername() : null;
     }
+
+
+    public static boolean isAdmin() {
+        return currentUser instanceof Admin;
+    }
+
+    public static User getCurrentUser() {
+        return currentUser;
+    }
+
 
     public static void cleanUserSession() {
-        loggedInUsername = null;
-        currentCategory = "All"; // Reset category too!
+        currentUser = null;       // 🌟 FIXED: Erases the active session model completely!
+        currentCategory = "All";   // Reset browsing filters back to default
 
         try {
             if (out != null) {
@@ -38,12 +48,15 @@ public class UserSession {
             System.err.println("Error cleaning up network streams on logout.");
         }
     }
+
+    // --- Stream Getters & Setters ---
     public static PrintWriter getOut() { return out; }
     public static void setOut(PrintWriter out) { UserSession.out = out; }
 
     public static BufferedReader getIn() { return in; }
     public static void setIn(BufferedReader in) { UserSession.in = in; }
 
+    // --- State Category Getters & Setters ---
     public static String getCurrentCategory() {
         return currentCategory;
     }
@@ -51,10 +64,5 @@ public class UserSession {
     public static void setCurrentCategory(String category) {
         currentCategory = category;
     }
-
-
-
-
-
 }
 

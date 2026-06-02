@@ -6,7 +6,9 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
@@ -27,14 +29,23 @@
          </children>
       </VBox>
       <Separator prefWidth="200.0" />
-      <Label text="All active auctions" textFill="#e4e4e4">
-         <font>
-            <Font name="Segoe UI Emoji" size="26.0" />
-         </font>
+      <HBox>
          <VBox.margin>
             <Insets top="10.0" />
          </VBox.margin>
-      </Label>
+         <children>
+            <Label text="All active auctions" textFill="#e4e4e4">
+               <font>
+                  <Font name="Segoe UI Emoji" size="26.0" />
+               </font>
+            </Label>
+            <TextField fx:id="searchBar" prefHeight="19.0" prefWidth="277.0" promptText="Search item by name" style="-fx-background-color: #151824;" styleClass="modern-input2">
+               <HBox.margin>
+                  <Insets left="550.0" />
+               </HBox.margin>
+            </TextField>
+         </children>
+      </HBox>
       <VBox spacing="15.0" />
       <StackPane VBox.vgrow="ALWAYS">
          <children>

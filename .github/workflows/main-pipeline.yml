@@ -1,0 +1,54 @@
+name: Java CI/CD Pipeline
+
+# 1. THE TRIGGER: When does this run?
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  # ---------------------------------------------
+  # PHASE 1: CONTINUOUS INTEGRATION (TESTING)
+  # ---------------------------------------------
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java Environment
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compile and Run Tests
+        run: mvn clean test
+
+  # ---------------------------------------------
+  # PHASE 2: CONTINUOUS DEPLOYMENT (PACKAGING)
+  # ---------------------------------------------
+  package-and-deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java Environment
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build the Executable Application
+        run: mvn clean package -DskipTests
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Compiled-Application
+          path: target/*.jar

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+
+<VBox alignment="CENTER" spacing="20.0" style="-fx-background-color: #2b2b36; -fx-padding: 30; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #3f3f4e; -fx-border-width: 2;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.auctionapp.controller.QuickBidController">
+    <children>
+        <Label text="Place a Quick Bid" style="-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;"/>
+        <Label fx:id="itemTitleLabel" text="Bidding on: Item Name" style="-fx-text-fill: #a0a0b0; -fx-font-size: 14px;"/>
+
+        <TextField fx:id="bidAmountInput" promptText="Enter amount ($)..." style="-fx-background-color: #1e1e26; -fx-text-fill: white; -fx-padding: 10; -fx-font-size: 16px; -fx-background-radius: 8;" maxWidth="250"/>
+
+        <HBox alignment="CENTER" spacing="15.0">
+            <children>
+                <Button text="Cancel" onAction="#handleCancel" style="-fx-background-color: transparent; -fx-text-fill: #a0a0b0; -fx-border-color: #a0a0b0; -fx-border-radius: 20; -fx-padding: 8 20 8 20; -fx-cursor: hand;"/>
+                <Button text="Confirm Bid" onAction="#handleConfirm" style="-fx-background-color: #6c5ce7; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 8 20 8 20; -fx-cursor: hand;"/>
+            </children>
+        </HBox>
+    </children>
+</VBox>

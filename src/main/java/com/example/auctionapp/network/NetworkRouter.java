@@ -114,9 +114,17 @@ public class NetworkRouter {
             double bidAmount = packet.has("bidAmount") ? packet.get("bidAmount").getAsDouble() : 0.0;
 
             Platform.runLater(() -> {
+                // 1. Update Detailed Screen (For Manual Bids)
                 if (DetailedBidController.activeDetailBidsScreen != null) {
                     DetailedBidController.activeDetailBidsScreen.handleBidResponse(success, message, bidAmount);
-                    System.out.println("✅ [ROUTER]: Bid confirmation delivered.");
+                    System.out.println("✅ [ROUTER]: Bid confirmation delivered to Detailed Screen.");
+                }
+
+                // 2. Update Dashboard Screen (For Quick Bids) <-- THIS WAS MISSING!
+                DashboardController dash = DashboardController.getInstance();
+                if (dash != null) {
+                    dash.handleBidResponse(success, message, bidAmount);
+                    System.out.println("✅ [ROUTER]: Bid confirmation delivered to Dashboard.");
                 }
             });
         });

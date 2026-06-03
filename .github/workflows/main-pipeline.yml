@@ -20,8 +20,8 @@ jobs:
       - name: Setup Java Environment
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '25-ea'
+          distribution: 'oracle'
           cache: maven
 
       - name: Compile and Run Tests

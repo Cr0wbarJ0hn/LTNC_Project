@@ -13,6 +13,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.transform.Scale;
+import javafx.stage.Stage;
+import javafx.stage.Modality;
+import javafx.stage.StageStyle;
+import javafx.scene.control.Alert;
 
 
 import javafx.scene.Parent;
@@ -21,6 +25,13 @@ import javafx.scene.Scene;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Base64;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.example.auctionapp.model.NetworkMessage;
+import com.example.auctionapp.model.UserSession;
+
+
 
 
 public class DashboardController {
@@ -424,6 +435,83 @@ public class DashboardController {
         } catch (Exception e) {
             System.out.println("Crash! Could not load the DetailedBid screen.");
             e.printStackTrace();
+        }
+    }
+    @FXML
+    public void handleQuickBid() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/QuickBidModal.fxml"));
+            Parent root = loader.load();
+
+            QuickBidController modalController = loader.getController();
+            modalController.setItemTitle(previewTitle.getText());
+
+            Stage modalStage = new Stage();
+            modalStage.initModality(Modality.APPLICATION_MODAL);
+            modalStage.initStyle(StageStyle.TRANSPARENT);
+
+            Scene scene = new Scene(root);
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            modalStage.setScene(scene);
+
+            modalStage.showAndWait();
+
+            if (modalController.isConfirmed()) {
+                double amount = modalController.getFinalBidAmount();
+
+                JsonObject payload = new JsonObject();
+                payload.addProperty("auctionId", this.currentSelectedAuctionId);
+                payload.addProperty("bidAmount", amount);
+                payload.addProperty("username", UserSession.getUsername());
+
+                Gson clientGson = new Gson();
+                NetworkMessage messageEnvelope = new NetworkMessage("BID", clientGson.toJson(payload), true);
+
+                // 🔥 FIRE AND FORGET: Just send it to the server and let the Router catch the reply!
+                new Thread(() -> {
+                    try {
+                        UserSession.getOut().println(clientGson.toJson(messageEnvelope));
+                        UserSession.getOut().flush();
+                        System.out.println("📤 Quick bid sent: $" + amount);
+                    } catch (Exception ex) {
+                        System.out.println("❌ Network thread crashed!");
+                        ex.printStackTrace();
+                    }
+                }).start();
+            }
+        } catch (Exception e) {
+            System.out.println("Could not load QuickBidModal.fxml");
+            e.printStackTrace();
+        }
+    }
+    // The NetworkRouter calls this method when the server replies!
+    public void handleBidResponse(boolean success, String message, double amount) {
+        if (success) {
+            System.out.println("✅ UI Updating! New Price: $" + amount);
+            currentBidLabel.setText("$" + String.format("%.2f", amount));
+
+            Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+            successAlert.setTitle("Bid Successful");
+            successAlert.setHeaderText(null);
+            successAlert.setContentText("You successfully placed a bid of $" + String.format("%.2f", amount) + "!");
+            successAlert.setGraphic(null);
+
+            javafx.scene.control.DialogPane dialogPane = successAlert.getDialogPane();
+            dialogPane.setStyle("-fx-background-color: #1a1a24; -fx-border-color: #3f3f5a; -fx-border-width: 1px;");
+            successAlert.setOnShowing(e -> {
+                dialogPane.lookupAll(".label").forEach(node -> node.setStyle("-fx-text-fill: white; -fx-font-size: 14px;"));
+                dialogPane.lookupAll(".button").forEach(node -> node.setStyle("-fx-background-color: #7b61ff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20px;"));
+            });
+            successAlert.show();
+
+        } else {
+            System.out.println("❌ Bid Rejected: " + message);
+
+            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+            errorAlert.setTitle("Bid Rejected");
+            errorAlert.setHeaderText(null);
+            errorAlert.setContentText(message);
+            errorAlert.show();
         }
     }
 

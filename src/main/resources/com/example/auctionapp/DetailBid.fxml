@@ -111,16 +111,81 @@
                   <StackPane>
                      <VBox.margin><Insets left="20.0" right="20.0" /></VBox.margin>
                      <children>
-                        <Pane fx:id="autoBidPane" prefHeight="300.0" style="-fx-background-color: #20202E;" styleClass="modern-card">
+                        <Pane fx:id="autoBidPane" prefHeight="340.0" style="-fx-background-color: #20202E;" styleClass="modern-card">
                            <children>
-                              <TextField layoutX="49.0" layoutY="54.0" prefHeight="51.0" prefWidth="672.0" promptText="Limit (Max Bid)" styleClass="modern-input" />
-                              <Button fx:id="autoBiddingButton" layoutX="49.0" layoutY="180.0" prefHeight="59.0" prefWidth="672.0" style="-fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5);" styleClass="sell-item-button" text="Start Auto-Bidding" />
+
+                              <!-- Title -->
+                              <Label layoutX="49.0" layoutY="18.0" text="Auto-Bidding Settings" textFill="WHITE">
+                                 <font><Font name="Segoe UI Semibold" size="16.0" /></font>
+                              </Label>
+
+                              <!-- Max price (required) -->
+                              <Label layoutX="49.0" layoutY="54.0" text="Maximum price (required) *" textFill="#888888">
+                                 <font><Font name="Segoe UI" size="12.0" /></font>
+                              </Label>
+                              <TextField fx:id="autoBidMaxInput"
+                                         layoutX="49.0" layoutY="72.0"
+                                         prefHeight="44.0" prefWidth="622.0"
+                                         promptText="e.g. 500.00 — system will not bid beyond this amount"
+                                         styleClass="modern-input" />
+
+                              <!-- Custom increment label -->
+                              <Label layoutX="49.0" layoutY="128.0"
+                                     text="Custom increment  (leave blank = use auction default)"
+                                     textFill="#888888">
+                                 <font><Font name="Segoe UI" size="12.0" /></font>
+                              </Label>
+                              <TextField fx:id="autoBidIncrementInput"
+                                         layoutX="49.0" layoutY="148.0"
+                                         prefHeight="44.0" prefWidth="295.0"
+                                         promptText="e.g. 25.00"
+                                         styleClass="modern-input" />
+
+                              <!-- Max rounds label -->
+                              <Label layoutX="356.0" layoutY="128.0"
+                                     text="Max rounds  (leave blank = unlimited)"
+                                     textFill="#888888">
+                                 <font><Font name="Segoe UI" size="12.0" /></font>
+                              </Label>
+                              <TextField fx:id="autoBidRoundsInput"
+                                         layoutX="356.0" layoutY="148.0"
+                                         prefHeight="44.0" prefWidth="315.0"
+                                         promptText="e.g. 10"
+                                         styleClass="modern-input" />
+
+                              <!-- Status label -->
+                              <Label fx:id="autoBidStatusLabel"
+                                     layoutX="49.0" layoutY="208.0"
+                                     prefWidth="622.0"
+                                     textFill="#22c55e"
+                                     wrapText="true">
+                                 <font><Font name="Segoe UI Semilight" size="13.0" /></font>
+                              </Label>
+
+                              <!-- Start button -->
+                              <Button fx:id="autoBiddingButton"
+                                      layoutX="49.0" layoutY="234.0"
+                                      prefHeight="52.0" prefWidth="622.0"
+                                      onAction="#handleStartAutoBid"
+                                      style="-fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5);"
+                                      styleClass="sell-item-button"
+                                      text="Start Auto-Bidding" />
+
+                              <!-- Cancel button — hidden by default -->
+                              <Button fx:id="cancelAutoBidButton"
+                                      layoutX="49.0" layoutY="300.0"
+                                      prefHeight="40.0" prefWidth="622.0"
+                                      onAction="#handleCancelAutoBid"
+                                      style="-fx-background-color: transparent; -fx-border-color: #e74c3c; -fx-border-radius: 6; -fx-text-fill: #e74c3c;"
+                                      text="Cancel Auto-Bid"
+                                      visible="false" />
+
                            </children>
                         </Pane>
 
                         <Pane fx:id="manualBidPane" prefHeight="300.0" style="-fx-background-color: #20202E;" styleClass="modern-card">
                            <children>
-                              <TextField fx:id="manualBidInput" layoutX="49.0" layoutY="54.0" prefHeight="51.0" prefWidth="672.0" promptText="Enter your bid" styleClass="modern-input" />
+                              <TextField fx:id="manualBidInput" layoutX="49.0" layoutY="54.0" prefHeight="51.0" prefWidth="672.0" promptText="Enter your bid amount" styleClass="modern-input" />
                               <Button fx:id="DetailPlaceBid" layoutX="49.0" layoutY="180.0" onAction="#handleManualBid" prefHeight="59.0" prefWidth="672.0" style="-fx-background-color: linear-gradient(to right, #7c3aed, #4f46e5);" styleClass="sell-item-button" text="Submit Manual Bid" />
                            </children>
                         </Pane>

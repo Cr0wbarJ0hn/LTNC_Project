@@ -23,7 +23,9 @@ public class ClientHandler implements Runnable {
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
     }
-
+    public String getUsername() {
+        return username;
+    }
     @Override
     public void run() {
         try {
@@ -44,6 +46,9 @@ public class ClientHandler implements Runnable {
                     case "SUBMIT_AUCTION" -> handleSubmitAuction(request);
                     case "BID" -> handleBid(request);
                     case "GET_CATEGORY" -> handleGetCategory(request);
+                    case "AUTO_BID_SET"    -> handleSetAutoBid(request);    // Kích hoạt auto-bid
+                    case "AUTO_BID_CANCEL" -> handleCancelAutoBid(request); // Hủy auto-bid
+                    case "AUTO_BID_STATUS" -> handleAutoBidStatus(request); // Hỏi trạng thái
                     default -> sendMessage(gson.toJson(new NetworkMessage("ERROR", "Unknown command", false)));
                 }
             }
@@ -174,6 +179,8 @@ public class ClientHandler implements Runnable {
                 if ("SUCCESS".equals(resultMessage)) {
                     // Success! Return a happy message back down the socket stream
                     sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Bid accepted successfully!", true)));
+                    // Kích hoạt chuỗi auto-bid: kiểm tra xem có ai đang chờ counter-bid không
+                    AutoBidManager.triggerAutoBid(auctionId, bidderName, bidAmount);
                 } else {
                     // Business rule validation failed (e.g., bid was too low or auction closed)
                     sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", resultMessage, false)));
@@ -194,6 +201,98 @@ public class ClientHandler implements Runnable {
         String response = (data == null || data.isEmpty()) ? "NO_ITEMS" : data;
         sendMessage(gson.toJson(new NetworkMessage("CATEGORY_RESPONSE", response, true)));
     }
+    private void handleSetAutoBid(JsonObject request) {
+        try {
+            // Bắt buộc phải đăng nhập mới dùng được
+            if (this.username == null) {
+                sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_RESPONSE",
+                        "You must be logged in to use auto-bidding.", false)));
+                return;
+            }
+
+            String innerJson   = request.get("data").getAsString();
+            JsonObject payload = JsonParser.parseString(innerJson).getAsJsonObject();
+
+            int    auctionId       = payload.get("auctionId").getAsInt();
+            double maxBid          = payload.get("maxBid").getAsDouble();
+            // Hai tham số tùy chọn — dùng giá trị mặc định nếu client không gửi
+            double customIncrement = payload.has("customIncrement") ? payload.get("customIncrement").getAsDouble() : 0;
+            int    maxRounds       = payload.has("maxRounds")       ? payload.get("maxRounds").getAsInt()         : 999;
+
+            String result = AutoBidManager.registerAutoBid(auctionId, this.username, maxBid, customIncrement, maxRounds);
+
+            boolean ok = "SUCCESS".equals(result);
+            sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_RESPONSE",
+                    ok ? "Auto-bidding activated! Price ceiling: $" + maxBid : result,
+                    ok)));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_RESPONSE",
+                    "Server error while setting up auto-bid.", false)));
+        }
+    }
+
+    /**
+     * Xử lý lệnh AUTO_BID_CANCEL — user muốn tắt auto-bidding.
+     *
+     * Payload JSON (trong trường "data"):
+     * { "auctionId": 42 }
+     */
+    private void handleCancelAutoBid(JsonObject request) {
+        try {
+            if (this.username == null) {
+                sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_CANCEL_RESPONSE",
+                        "You must be logged in.", false)));
+                return;
+            }
+
+            String innerJson   = request.get("data").getAsString();
+            JsonObject payload = JsonParser.parseString(innerJson).getAsJsonObject();
+            int auctionId      = payload.get("auctionId").getAsInt();
+
+            String result = AutoBidManager.cancelAutoBid(auctionId, this.username);
+            boolean ok    = "SUCCESS".equals(result);
+            sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_CANCEL_RESPONSE",
+                    ok ? "Auto-bidding has been cancelled ." : result, ok)));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_CANCEL_RESPONSE",
+                    "Server error.", false)));
+        }
+    }
+
+    /**
+     * Xử lý lệnh AUTO_BID_STATUS — client hỏi trạng thái auto-bid hiện tại.
+     *
+     * Payload JSON (trong trường "data"):
+     * { "auctionId": 42 }
+     *
+     * Response trả về JSON: { active, maxBid, increment, maxRounds, roundsUsed }
+     */
+    private void handleAutoBidStatus(JsonObject request) {
+        try {
+            if (this.username == null) {
+                sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_STATUS_RESPONSE",
+                        "{\"active\":false}", false)));
+                return;
+            }
+
+            String innerJson   = request.get("data").getAsString();
+            JsonObject payload = JsonParser.parseString(innerJson).getAsJsonObject();
+            int auctionId      = payload.get("auctionId").getAsInt();
+
+            String statusJson = AutoBidManager.getAutoBidStatus(auctionId, this.username);
+            sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_STATUS_RESPONSE", statusJson, true)));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(gson.toJson(new NetworkMessage("AUTO_BID_STATUS_RESPONSE",
+                    "{\"error\":\"server erro\"}", false)));
+        }
+    }
+
 
     // --- HELPERS ---
 

@@ -433,7 +433,13 @@ public class ClientHandler implements Runnable, AuctionObserver {
             AuctionManager.getInstance().submitBid(auctionId, bidderName, bidAmount);
 
             // 3. If no exceptions were thrown above, the bid is officially approved!
-            sendMessage(gson.toJson(new NetworkMessage("BID_RESPONSE", "Bid accepted successfully!", true)));
+            JsonObject replyPayload = new JsonObject();
+            replyPayload.addProperty("action", "BID_RESPONSE");
+            replyPayload.addProperty("success", true);
+            replyPayload.addProperty("message", "Bid accepted successfully!");
+            replyPayload.addProperty("bidAmount", bidAmount);
+
+            sendMessage(replyPayload.toString());
 
         } catch (SelfBiddingException e) {
             // 🌟 Handle Policy Violation individually

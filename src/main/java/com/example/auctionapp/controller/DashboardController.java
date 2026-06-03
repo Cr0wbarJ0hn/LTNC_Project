@@ -3,20 +3,27 @@ package com.example.auctionapp.controller;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Rectangle; // Make sure to import this!
 import javafx.scene.layout.VBox;
 import javafx.scene.image.ImageView;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.transform.Scale;
+import javafx.scene.control.Alert;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.example.auctionapp.model.NetworkMessage;
+import com.example.auctionapp.model.UserSession;
 
 
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.scene.Node;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -28,7 +35,6 @@ public class DashboardController {
     public DashboardController() {
         instance = this;
     }
-
 
     // 3. Allow anyone in the app to grab the Dashboard!
     public static DashboardController getInstance() {
@@ -65,9 +71,6 @@ public class DashboardController {
     private String currentImagePath = "";
     @FXML
     public void sellItem() {
-
-
-
         // This makes the right panel invisible AND removes its reserved space!
         rightPane.setVisible(false);
         rightPane.setManaged(false);
@@ -97,7 +100,6 @@ public class DashboardController {
 
     @FXML
     public void loadMyauction() {
-
         // Bring the right pane back when returning to Home/Browse!
         rightPane.setVisible(true);
         rightPane.setManaged(true);
@@ -125,7 +127,6 @@ public class DashboardController {
 
     @FXML
     public void loadNotif() {
-
         rightPane.setVisible(true);
         rightPane.setManaged(true);
         try {
@@ -152,7 +153,6 @@ public class DashboardController {
 
     @FXML
     public void loadMyBids() {
-
         // Bring the right pane back when returning to Home/Browse!
         rightPane.setVisible(true);
         rightPane.setManaged(true);
@@ -180,7 +180,6 @@ public class DashboardController {
 
     @FXML
     public void loadHomeView() {
-
 
         rightPane.setVisible(true);
         rightPane.setManaged(true);        try {
@@ -216,6 +215,9 @@ public class DashboardController {
 
     @FXML
     public void initialize() {
+
+
+
         Platform.runLater(() -> {
             Scene scene = mainContent.getScene();
             if (scene != null) {
@@ -383,7 +385,6 @@ public class DashboardController {
     }
     @FXML
     public void loadDetailedBidScreen() {
-
         try {
             // 1. Load the DetailedBid FXML
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/DetailBid.fxml"));
@@ -423,6 +424,113 @@ public class DashboardController {
 
         } catch (Exception e) {
             System.out.println("Crash! Could not load the DetailedBid screen.");
+            e.printStackTrace();
+        }
+    }
+    @FXML
+    public void handleQuickBid() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/auctionapp/QuickBidModal.fxml"));
+            Parent root = loader.load();
+
+            QuickBidController modalController = loader.getController();
+            modalController.setItemTitle(previewTitle.getText());
+
+            Stage modalStage = new Stage();
+            modalStage.initModality(Modality.APPLICATION_MODAL); // Freezes the dashboard behind it
+            modalStage.initStyle(StageStyle.TRANSPARENT); // Removes Windows top bar
+
+            Scene scene = new Scene(root);
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            modalStage.setScene(scene);
+
+            modalStage.showAndWait();
+
+            if (modalController.isConfirmed()) {
+                double amount = modalController.getFinalBidAmount();
+
+                    JsonObject payload = new JsonObject();
+                payload.addProperty("auctionId", this.currentSelectedAuctionId);
+                payload.addProperty("bidAmount", amount);
+                payload.addProperty("username", UserSession.getUsername());
+
+                Gson clientGson = new Gson();
+                NetworkMessage messageEnvelope = new NetworkMessage("BID", clientGson.toJson(payload), true);
+
+                // --- 6. THE NETWORK THREAD ---
+                new Thread(() -> {
+                    try {
+                        // Send the bid
+                        UserSession.getOut().println(clientGson.toJson(messageEnvelope));
+                        UserSession.getOut().flush();
+                        System.out.println("📤 Quick bid sent: $" + amount);
+
+                        String responseText;
+                        while ((responseText = UserSession.getIn().readLine()) != null) {
+                            NetworkMessage serverReply = clientGson.fromJson(responseText, NetworkMessage.class);
+
+                            if ("BID_RESPONSE".equals(serverReply.action)) {
+                                Platform.runLater(() -> {
+                                    if (serverReply.success) {
+                                        System.out.println("✅ UI Updating! New Price: $" + amount);
+
+                                        //Update the dashboard label instantly
+                                        currentBidLabel.setText("$" + String.format("%.2f", amount));
+
+                                        //Show the Success Pop-up!
+                                        Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                                        successAlert.setTitle("Bid Successful");
+                                        successAlert.setHeaderText(null);
+                                        successAlert.setContentText("You successfully placed a bid of $" + String.format("%.2f", amount) + "!");
+                                        successAlert.setGraphic(null);
+
+                                        // --- INLINE DARK THEME STYLING ---
+                                        javafx.scene.control.DialogPane dialogPane = successAlert.getDialogPane();
+                                        dialogPane.setStyle("-fx-background-color: #1a1a24; -fx-border-color: #3f3f5a; -fx-border-width: 1px;");
+
+                                        successAlert.setOnShowing(e -> {
+                                            dialogPane.lookupAll(".label").forEach(node -> node.setStyle("-fx-text-fill: white; -fx-font-size: 14px;"));
+                                            dialogPane.lookupAll(".button").forEach(node -> node.setStyle("-fx-background-color: #7b61ff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20px;"));
+                                        });
+                                        // ---------------------------------
+
+                                        successAlert.show();
+
+                                    } else {
+                                        System.out.println("❌ Bid Rejected: " + serverReply.data);
+
+                                        // 3. Show the Rejected Pop-up!
+                                        Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                                        errorAlert.setTitle("Bid Rejected");
+                                        errorAlert.setHeaderText(null);
+                                        errorAlert.setContentText(serverReply.data);
+                                        errorAlert.setGraphic(null);
+
+                                        // --- INLINE DARK THEME STYLING ---
+                                        javafx.scene.control.DialogPane dialogPane = errorAlert.getDialogPane();
+                                        dialogPane.setStyle("-fx-background-color: #1a1a24; -fx-border-color: #3f3f5a; -fx-border-width: 1px;");
+
+                                        errorAlert.setOnShowing(e -> {
+                                            dialogPane.lookupAll(".label").forEach(node -> node.setStyle("-fx-text-fill: white; -fx-font-size: 14px;"));
+                                            dialogPane.lookupAll(".button").forEach(node -> node.setStyle("-fx-background-color: #7b61ff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 20px;"));
+                                        });
+                                        // ---------------------------------
+
+                                        errorAlert.show();
+                                    }
+                                });
+
+                                break;
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("❌ Network thread crashed!");
+                        ex.printStackTrace();
+                    }
+                }).start();
+            }
+        } catch (Exception e) {
+            System.out.println("Could not load QuickBidModal.fxml");
             e.printStackTrace();
         }
     }

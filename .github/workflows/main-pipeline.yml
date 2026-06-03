@@ -25,7 +25,7 @@ jobs:
           cache: maven
 
       - name: Compile and Run Tests
-        run: mvn clean test
+        run: mvn clean test -Dglass.platform=Monocle -Dmonocle.platform=Headless -Djava.awt.headless=true
 
   # ---------------------------------------------
   # PHASE 2: CONTINUOUS DEPLOYMENT (PACKAGING)

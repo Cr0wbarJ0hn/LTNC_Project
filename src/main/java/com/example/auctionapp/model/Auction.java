@@ -15,7 +15,7 @@ public class Auction {
     private LocalDateTime endTime;
     private String status;
     private List<BidTransaction> bidHistory;
-    public Auction(Items item, Member seller, double startingPrice, LocalDateTime endTime){
+    public Auction(Items item, Member seller, double startingPrice, double priceIncrement, LocalDateTime endTime){
         this.item = item;
         this.seller = seller;
         this.startingPrice = startingPrice;
@@ -24,6 +24,7 @@ public class Auction {
         this.endTime = endTime;
         this.status = "ACTIVE";
         this.bidHistory = new ArrayList<>();
+        this.priceIncrement = priceIncrement;
     }
     public boolean placeBid(BidTransaction newBid) {
         if (!status.equals("ACTIVE")) {
